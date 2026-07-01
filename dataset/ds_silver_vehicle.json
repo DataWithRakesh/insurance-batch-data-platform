@@ -1,10 +1,6 @@
 {
 	"name": "ds_silver_vehicle",
 	"properties": {
-		"linkedServiceName": {
-			"referenceName": "ls_adls_dev",
-			"type": "LinkedServiceReference"
-		},
 		"annotations": [],
 		"type": "Parquet",
 		"typeProperties": {
