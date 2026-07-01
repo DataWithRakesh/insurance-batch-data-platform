@@ -6,17 +6,21 @@
 		},
 		"nbformat": 4,
 		"nbformat_minor": 2,
+		"bigDataPool": {
+			"referenceName": "sparksmall",
+			"type": "BigDataPoolReference"
+		},
 		"sessionProperties": {
 			"driverMemory": "28g",
 			"driverCores": 4,
 			"executorMemory": "28g",
 			"executorCores": 4,
-			"numExecutors": 2,
+			"numExecutors": 1,
 			"conf": {
-				"spark.dynamicAllocation.enabled": "false",
-				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.enabled": "true",
+				"spark.dynamicAllocation.minExecutors": "1",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "f12c2465-2966-433d-b629-dbefdd8960c3"
+				"spark.autotune.trackingId": "ad9ea8d9-c15f-45b9-9a68-18f9d306f23b"
 			}
 		},
 		"metadata": {
@@ -24,10 +28,25 @@
 			"enableDebugMode": false,
 			"kernelspec": {
 				"name": "synapse_pyspark",
-				"display_name": "python"
+				"display_name": "Synapse PySpark"
 			},
 			"language_info": {
 				"name": "python"
+			},
+			"a365ComputeOptions": {
+				"id": "/subscriptions/c2cd82ac-1b67-4f57-ae79-64d3e1739263/resourceGroups/rg-ibdp-dev/providers/Microsoft.Synapse/workspaces/insurance-batch-data-processing/bigDataPools/sparksmall",
+				"name": "sparksmall",
+				"type": "Spark",
+				"endpoint": "https://insurance-batch-data-processing.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/sparksmall",
+				"auth": {
+					"type": "AAD",
+					"authResource": "https://dev.azuresynapse.net"
+				},
+				"sparkVersion": "3.5",
+				"nodeCount": 10,
+				"cores": 4,
+				"memory": 28,
+				"automaticScaleJobs": true
 			},
 			"sessionKeepAliveTimeout": 30
 		},
@@ -35,7 +54,56 @@
 			{
 				"cell_type": "code",
 				"source": [
-					""
+					"from notebookutils import mssparkutils\n",
+					"from pyspark.sql.functions import current_timestamp, input_file_name"
+				],
+				"execution_count": 11
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"tags": [
+						"parameters"
+					]
+				},
+				"source": [
+					"landing_path = \"abfss://synapse@saibdpdev.dfs.core.windows.net/landing/customer/\""
+				],
+				"execution_count": 12
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"df = (\n",
+					"    spark.read\n",
+					"         .option(\"header\", \"true\")\n",
+					"         .csv(landing_path)\n",
+					")\n",
+					"\n",
+					"df.printSchema()\n",
+					"df.show(5, truncate=False)"
+				],
+				"execution_count": 13
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"\n",
+					"bronze_df = (\n",
+					"    df\n",
+					"    .withColumn(\"ingestion_ts\", current_timestamp())\n",
+					"    .withColumn(\"source_file_name\", input_file_name())\n",
+					")"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"bronze_df.write \\\n",
+					"    .format(\"delta\") \\\n",
+					"    .mode(\"overwrite\") \\\n",
+					"    .save(bronze_path)"
 				],
 				"execution_count": null
 			}

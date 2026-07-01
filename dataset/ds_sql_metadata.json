@@ -1,0 +1,53 @@
+{
+	"name": "ds_sql_metadata",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_slq_server",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "source_name",
+				"type": "varchar"
+			},
+			{
+				"name": "source_path",
+				"type": "varchar"
+			},
+			{
+				"name": "file_format",
+				"type": "varchar"
+			},
+			{
+				"name": "business_key",
+				"type": "varchar"
+			},
+			{
+				"name": "watermark_column",
+				"type": "varchar"
+			},
+			{
+				"name": "is_active",
+				"type": "char"
+			},
+			{
+				"name": "bronze_path",
+				"type": "varchar"
+			},
+			{
+				"name": "silver_path",
+				"type": "varchar"
+			},
+			{
+				"name": "gold_path",
+				"type": "varchar"
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "metadata"
+		}
+	}
+}
