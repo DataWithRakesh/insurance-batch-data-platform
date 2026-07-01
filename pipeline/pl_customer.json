@@ -1,0 +1,9 @@
+{
+	"name": "pl_customer",
+	"properties": {
+		"folder": {
+			"name": "customer"
+		},
+		"annotations": []
+	}
+}
