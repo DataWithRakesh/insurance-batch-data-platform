@@ -1,0 +1,19 @@
+{
+	"name": "ds_landing_insurance_folder",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_adls_dev",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Binary",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"folderPath": "landing/insurance_claims",
+				"fileSystem": "insurancedataplatform"
+			}
+		}
+	},
+	"type": "Microsoft.Synapse/workspaces/datasets"
+}

@@ -1,0 +1,475 @@
+{
+	"name": "nb_policy_silver_load_v2",
+	"properties": {
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"bigDataPool": {
+			"referenceName": "sparkpool",
+			"type": "BigDataPoolReference"
+		},
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 1,
+			"runAsWorkspaceSystemIdentity": false,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "true",
+				"spark.dynamicAllocation.minExecutors": "1",
+				"spark.dynamicAllocation.maxExecutors": "2",
+				"spark.autotune.trackingId": "2490786d-8e17-4cf4-ae84-d9683317f00f"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"enableDebugMode": false,
+			"language_info": {
+				"name": "python"
+			},
+			"a365ComputeOptions": {
+				"id": "/subscriptions/c2cd82ac-1b67-4f57-ae79-64d3e1739263/resourceGroups/rg-synapse-workspace/providers/Microsoft.Synapse/workspaces/insurance-data-platform/bigDataPools/sparkpool",
+				"name": "sparkpool",
+				"type": "Spark",
+				"endpoint": "https://insurance-data-platform.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/sparkpool",
+				"auth": {
+					"type": "AAD",
+					"authResource": "https://dev.azuresynapse.net",
+					"authHeader": null
+				},
+				"sparkVersion": "3.5",
+				"nodeCount": 10,
+				"cores": 4,
+				"memory": 28,
+				"extraHeader": null
+			},
+			"sessionKeepAliveTimeout": 30
+		},
+		"cells": [
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"## 1. Imports"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"from pyspark.sql import functions as F\n",
+					"from pyspark.sql.window import Window\n",
+					"from delta.tables import DeltaTable"
+				],
+				"execution_count": 1
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"## 2. Configuration"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"storage_account=\"rakeshsynapseadlsgen2\"\n",
+					"container_name=\"insurancedataplatform\"\n",
+					"\n",
+					"bronze_path=(f\"abfss://{container_name}@{storage_account}.dfs.core.windows.net/bronze/\")\n",
+					"silver_path=(f\"abfss://{container_name}@{storage_account}.dfs.core.windows.net/silver/policy/\")\n",
+					""
+				],
+				"execution_count": 2
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"## 3. Read Bronze Layer"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"bronze_df=spark.read.format(\"parquet\").load(bronze_path)\n",
+					"print(f\"Bronze record count is : {bronze_df.count()}\")\n",
+					"bronze_df.printSchema()"
+				],
+				"execution_count": 3
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"## 4. Prepare Policy Staging DataFrame"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"policy_df = (bronze_df.select(\n",
+					"    \"policy_number\",\n",
+					"    \"policy_bind_date\",\n",
+					"    \"policy_state\",\n",
+					"    \"policy_csl\",\n",
+					"    \"policy_deductable\",\n",
+					"    \"policy_annual_premium\",\n",
+					"    \"umbrella_limit\"\n",
+					").withColumn(\n",
+					"    \"change_hash\",\n",
+					"    F.sha2(\n",
+					"        F.concat_ws(\n",
+					"            \"||\",\n",
+					"            F.col(\"policy_bind_date\"),\n",
+					"            F.col(\"policy_state\"),\n",
+					"            F.col(\"policy_csl\"),\n",
+					"            F.col(\"policy_deductable\"),\n",
+					"            F.col(\"policy_annual_premium\"),\n",
+					"            F.col(\"umbrella_limit\")\n",
+					"        ),\n",
+					"        256\n",
+					"    )\n",
+					")\n",
+					")\n",
+					"\n",
+					"print(f\"Policy record count : {policy_df.count()}\")\n",
+					"policy_df.show(5,truncate=False)"
+				],
+				"execution_count": 4
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"collapsed": false
+				},
+				"source": [
+					"display(bronze_df.filter(F.col(\"policy_number\")==\"521585\"))\n",
+					"\n",
+					"display(policy_df.filter(F.col(\"policy_number\")==\"521585\"))\n",
+					"display(target_df.filter(F.col(\"policy_number\")==\"521585\"))"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"policy_df.select(\"policy_bind_date\").show(5, truncate=False)"
+				],
+				"execution_count": 5
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"target_df.select(\"policy_bind_date\").show(5, truncate=False)"
+				]
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"## 5. Data Quality Validation"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"record_count= policy_df.count()\n",
+					"print(f\"Record count of policy is : {record_count}\")\n",
+					"\n",
+					"#Checking Business key has any null entries\n",
+					"null_count= policy_df.filter(F.col(\"policy_number\").isNull()).count()\n",
+					"print(f\"Null policy number count : {null_count}\")\n",
+					"\n",
+					"#Checking duplicate Business Key\n",
+					"duplicate_df=policy_df.groupBy(\"policy_number\").count().filter(F.col(\"count\")>1)\n",
+					"duplicate_count = duplicate_df.count()\n",
+					"print(f\" Duplicate Policy Numbers are : {duplicate_count}\")\n",
+					"\n",
+					"#Business Rule Validation: Premium should not be negative\n",
+					"invalid_premium = policy_df.filter(F.col(\"policy_annual_premium\")<=0).count()\n",
+					"print(f\"Invalid premium records are : {invalid_premium}\")\n",
+					"\n",
+					"if (null_count >0 or duplicate_count > 0 or invalid_premium >0):\n",
+					"    raise Exception(f\"\"\"\n",
+					"                    Data Quality Validation Failed\n",
+					"                    \n",
+					"                    Null Policy Numbers : {null_count}\n",
+					"                    Duplicate Policy Number: {duplicate_count}\n",
+					"                    Invalid premium records: {invalid_premium}\n",
+					"                    \"\"\")\n",
+					"print(\"Data Quality Validation Passed\")\n",
+					""
+				],
+				"execution_count": 6
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"## 6. Check Target Delta Table"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"is_delta_table = DeltaTable.isDeltaTable(spark,silver_path)\n",
+					"print(f\"Silver policy exist : {is_delta_table}\")"
+				],
+				"execution_count": 6
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"## 7. Initial Load"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"if not is_delta_table:\n",
+					"\n",
+					"    print(\"Initial Load Starting...\")\n",
+					"    \n",
+					"    initial_load_df=(\n",
+					"            policy_df.withColumn(\"policy_sk\",\n",
+					"            F.row_number().over(Window.orderBy(\"policy_number\")))\\\n",
+					"            .withColumn(\"effective_start_date\",F.current_date())\\\n",
+					"            .withColumn(\"effective_end_date\",F.lit(\"9999-12-31\"))\\\n",
+					"            .withColumn(\"is_current\",F.lit(\"Y\")))\n",
+					"\n",
+					"    initial_load_df.write.format(\"delta\").mode(\"overwrite\").save(silver_path)\n",
+					"\n",
+					"    print(\"Intial load completed...\")"
+				],
+				"execution_count": 7
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"## 8. Incremental SCD2 Merge\n",
+					""
+				]
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"target_df = spark.read.format(\"delta\").load(silver_path)\n",
+					"\n",
+					"# Get the last number of the Surrogate key which is \"policy_sk\"\n",
+					"max_sk_df = target_df.agg(F.max(\"policy_sk\").alias(\"max_sk\"))\n",
+					"\n",
+					"max_sk= max_sk_df.collect()[0][\"max_sk\"]\n",
+					"\n",
+					"if max_sk is None:\n",
+					"    max_sk = 0\n",
+					"\n",
+					"print(f\"Current max policy sk is : {max_sk}\")\n",
+					"\n",
+					"comparision_df =(\n",
+					"                policy_df.alias(\"src\")\n",
+					"                .join(\n",
+					"                    target_df.filter(F.col(\"is_current\")==\"Y\").alias(\"tgt\"),\n",
+					"                    on=\"policy_number\",\n",
+					"                    how=\"left\"\n",
+					"                )\n",
+					")\n",
+					"\n",
+					"comparision_df=(\n",
+					"                comparision_df.withColumn(\n",
+					"                    \"merge_action\",F.when(\n",
+					"                            F.col(\"tgt.policy_number\").isNull(),\n",
+					"                            \"INSERT\"\n",
+					"                    ).when(\n",
+					"                        F.col(\"src.change_hash\")!=F.col(\"tgt.change_hash\"),\n",
+					"                        \"UPDATE\"\n",
+					"                    ).otherwise(\"NO_CHANGE\")\n",
+					"                    \n",
+					"                )\n",
+					")\n",
+					""
+				],
+				"execution_count": 8
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"bronze_df.printSchema()"
+				],
+				"execution_count": 22
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"collapsed": false
+				},
+				"source": [
+					"display(comparision_df.filter(F.col(\"policy_number\") == \"429027\") \\\n",
+					".select(\n",
+					"    \"src.policy_bind_date\",\"tgt.policy_bind_date\",\n",
+					"    \"src.policy_state\",\"tgt.policy_state\",\n",
+					"    \"src.policy_csl\",\"tgt.policy_csl\",\n",
+					"    \"src.policy_deductable\",\"tgt.policy_deductable\",\n",
+					"    \"src.policy_annual_premium\",\"tgt.policy_annual_premium\",\n",
+					"    \"src.umbrella_limit\",\"tgt.umbrella_limit\"\n",
+					"))"
+				],
+				"execution_count": 21
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"## Preparing Updated Records"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"updated_df = (comparision_df.filter(F.col(\"merge_action\")==\"UPDATE\"))\n",
+					"\n",
+					"print(f\"Updated record counts are : {updated_df.count()}\")\n",
+					"\n",
+					"updated_df.select(\"policy_number\",\"merge_action\").show(truncate=False)"
+				],
+				"execution_count": 9
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"## Preparing insert record"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"insert_df = (\n",
+					"    comparision_df\n",
+					"    .filter(\n",
+					"        F.col(\"merge_action\").isin(\"INSERT\", \"UPDATE\")\n",
+					"    )\n",
+					")\n",
+					"\n",
+					"print(f\"Insert record counts are : {insert_df.count()}\")\n",
+					"\n",
+					"insert_df.select(\"policy_number\",\"merge_action\").show(truncate=False)\n",
+					""
+				],
+				"execution_count": 21
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"## 9. Post Load Validation"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"comparision_df.select(\n",
+					"    \"policy_number\",\n",
+					"    \"merge_action\"\n",
+					").show(20,truncate=False)"
+				]
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"## 10. Audit & Logging"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					""
+				]
+			}
+		]
+	}
+}

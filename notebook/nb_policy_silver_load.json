@@ -1,0 +1,137 @@
+{
+	"name": "nb_policy_silver_load",
+	"properties": {
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"bigDataPool": {
+			"referenceName": "sparkpool",
+			"type": "BigDataPoolReference"
+		},
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 1,
+			"runAsWorkspaceSystemIdentity": false,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "true",
+				"spark.dynamicAllocation.minExecutors": "1",
+				"spark.dynamicAllocation.maxExecutors": "2",
+				"spark.autotune.trackingId": "e6ff1519-baca-4e8b-ac9c-922aef3c7a4f"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"enableDebugMode": false,
+			"language_info": {
+				"name": "python"
+			},
+			"a365ComputeOptions": {
+				"id": "/subscriptions/c2cd82ac-1b67-4f57-ae79-64d3e1739263/resourceGroups/rg-synapse-workspace/providers/Microsoft.Synapse/workspaces/insurance-data-platform/bigDataPools/sparkpool",
+				"name": "sparkpool",
+				"type": "Spark",
+				"endpoint": "https://insurance-data-platform.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/sparkpool",
+				"auth": {
+					"type": "AAD",
+					"authResource": "https://dev.azuresynapse.net",
+					"authHeader": null
+				},
+				"sparkVersion": "3.5",
+				"nodeCount": 10,
+				"cores": 4,
+				"memory": 28,
+				"extraHeader": null
+			},
+			"sessionKeepAliveTimeout": 30
+		},
+		"cells": [
+			{
+				"cell_type": "code",
+				"source": [
+					"from pyspark.sql.functions import col,count,lit,current_date,row_number\n",
+					"from pyspark.sql.window import Window"
+				],
+				"execution_count": 1
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"df=spark.read.parquet(\"abfss://insurancedataplatform@rakeshsynapseadlsgen2.dfs.core.windows.net/bronze/insurance_claims.parquet\")\n",
+					"print(df.count())\n",
+					"df.printSchema()"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"print(df.columns)"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"policy_df=df.select(\n",
+					"    \"policy_number\",\n",
+					"    \"policy_bind_date\",\n",
+					"    \"policy_csl\",\n",
+					"    \"policy_state\",\n",
+					"    \"policy_deductable\",\n",
+					"    \"policy_annual_premium\",\n",
+					"    \"umbrella_limit\"\n",
+					"\n",
+					")\n",
+					"\n",
+					"policy_df.write.format('delta').mode('overwrite').save(\"abfss://insurancedataplatform@rakeshsynapseadlsgen2.dfs.core.windows.net/silver/policy/\")\n",
+					""
+				],
+				"execution_count": 7
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"collapsed": false
+				},
+				"source": [
+					"policy_delta_df= spark.read.format(\"delta\").load(\"abfss://insurancedataplatform@rakeshsynapseadlsgen2.dfs.core.windows.net/silver/policy/\")\n",
+					"print(policy_delta_df.count())\n",
+					"display(policy_delta_df.limit(5))"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"policy_scd2_df=policy_delta_df.withColumn(\"policy_sk\",row_number().over(Window.orderBy(\"policy_number\")))\\\n",
+					"                    .withColumn(\"effective_start_date\",current_date())\\\n",
+					"                    .withColumn(\"effective_end_date\",lit(\"9999-12-31\"))\\\n",
+					"                    .withColumn(\"is_current\",lit(\"Y\"))"
+				],
+				"execution_count": 12
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"policy_scd2_df.write.format(\"delta\").mode(\"overwrite\").option(\"overwriteSchema\",\"true\").save(\"abfss://insurancedataplatform@rakeshsynapseadlsgen2.dfs.core.windows.net/silver/policy/\")\n",
+					""
+				],
+				"execution_count": 16
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"spark.read.format(\"delta\").load(\"abfss://insurancedataplatform@rakeshsynapseadlsgen2.dfs.core.windows.net/silver/policy/\").printSchema()\n",
+					""
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"from delta.tables import DeltaTable\n",
+					"silver_path=\"abfss://insurancedataplatform@rakeshsynapseadlsgen2.dfs.core.windows.net/silver/policy/\"\n",
+					"DeltaTable.isDeltaTable(spark,silver_path)"
+				],
+				"execution_count": 19
+			}
+		]
+	}
+}

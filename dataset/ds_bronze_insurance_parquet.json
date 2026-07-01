@@ -1,0 +1,21 @@
+{
+	"name": "ds_bronze_insurance_parquet",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_adls_dev",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"folderPath": "bronze",
+				"fileSystem": "insurancedataplatform"
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": []
+	},
+	"type": "Microsoft.Synapse/workspaces/datasets"
+}

@@ -1,0 +1,196 @@
+{
+	"name": "df_bronze_to_silver",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "ds_bronze_insurance_parquet",
+						"type": "DatasetReference"
+					},
+					"name": "BronzeData"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "ds_silver_customer",
+						"type": "DatasetReference"
+					},
+					"name": "sinkcustomer"
+				},
+				{
+					"dataset": {
+						"referenceName": "ds_silver_policy",
+						"type": "DatasetReference"
+					},
+					"name": "sinkpolicy"
+				},
+				{
+					"dataset": {
+						"referenceName": "ds_silver_vehicle",
+						"type": "DatasetReference"
+					},
+					"name": "sinkvehicle"
+				},
+				{
+					"dataset": {
+						"referenceName": "ds_silver_claim",
+						"type": "DatasetReference"
+					},
+					"name": "sinkclaim"
+				}
+			],
+			"transformations": [
+				{
+					"name": "selectcustomer"
+				},
+				{
+					"name": "selectpolicy"
+				},
+				{
+					"name": "selectvehicle"
+				},
+				{
+					"name": "selectclaim"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          months_as_customer as string,",
+				"          age as string,",
+				"          policy_number as string,",
+				"          policy_bind_date as string,",
+				"          policy_state as string,",
+				"          policy_csl as string,",
+				"          policy_deductable as string,",
+				"          policy_annual_premium as string,",
+				"          umbrella_limit as string,",
+				"          insured_zip as string,",
+				"          insured_sex as string,",
+				"          insured_education_level as string,",
+				"          insured_occupation as string,",
+				"          insured_hobbies as string,",
+				"          insured_relationship as string,",
+				"          {capital-gains} as string,",
+				"          {capital-loss} as string,",
+				"          incident_date as string,",
+				"          incident_type as string,",
+				"          collision_type as string,",
+				"          incident_severity as string,",
+				"          authorities_contacted as string,",
+				"          incident_state as string,",
+				"          incident_city as string,",
+				"          incident_location as string,",
+				"          incident_hour_of_the_day as string,",
+				"          number_of_vehicles_involved as string,",
+				"          property_damage as string,",
+				"          bodily_injuries as string,",
+				"          witnesses as string,",
+				"          police_report_available as string,",
+				"          total_claim_amount as string,",
+				"          injury_claim as string,",
+				"          property_claim as string,",
+				"          vehicle_claim as string,",
+				"          auto_make as string,",
+				"          auto_model as string,",
+				"          auto_year as string,",
+				"          fraud_reported as string,",
+				"          {_c39} as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'parquet') ~> BronzeData",
+				"BronzeData select(mapColumn(",
+				"          months_as_customer,",
+				"          age,",
+				"          insured_zip,",
+				"          insured_sex,",
+				"          insured_education_level,",
+				"          insured_occupation,",
+				"          insured_hobbies,",
+				"          insured_relationship,",
+				"          {capital-gains},",
+				"          {capital-loss}",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> selectcustomer",
+				"BronzeData select(mapColumn(",
+				"          policy_number,",
+				"          policy_bind_date,",
+				"          policy_state,",
+				"          policy_csl,",
+				"          policy_deductable,",
+				"          policy_annual_premium,",
+				"          umbrella_limit",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> selectpolicy",
+				"BronzeData select(mapColumn(",
+				"          auto_make,",
+				"          auto_model,",
+				"          auto_year",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> selectvehicle",
+				"BronzeData select(mapColumn(",
+				"          incident_date,",
+				"          incident_type,",
+				"          collision_type,",
+				"          incident_severity,",
+				"          authorities_contacted,",
+				"          incident_state,",
+				"          incident_city,",
+				"          incident_location,",
+				"          incident_hour_of_the_day,",
+				"          number_of_vehicles_involved,",
+				"          property_damage,",
+				"          bodily_injuries,",
+				"          witnesses,",
+				"          police_report_available,",
+				"          total_claim_amount,",
+				"          injury_claim,",
+				"          property_claim,",
+				"          vehicle_claim,",
+				"          fraud_reported",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> selectclaim",
+				"selectcustomer sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sinkcustomer",
+				"selectpolicy sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sinkpolicy",
+				"selectvehicle sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sinkvehicle",
+				"selectclaim sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sinkclaim"
+			]
+		}
+	}
+}
