@@ -1,9 +1,0 @@
-{
-	"name": "pl_claim",
-	"properties": {
-		"folder": {
-			"name": "claim"
-		},
-		"annotations": []
-	}
-}
