@@ -207,13 +207,12 @@
 									"userProperties": [],
 									"typeProperties": {
 										"source": {
-											"type": "DelimitedTextSource",
+											"type": "BinarySource",
 											"storeSettings": {
-												"type": "AzureBlobFSReadSettings",
-												"enablePartitionDiscovery": false
+												"type": "AzureBlobFSReadSettings"
 											},
 											"formatSettings": {
-												"type": "DelimitedTextReadSettings"
+												"type": "BinaryReadSettings"
 											}
 										},
 										"sink": {
@@ -226,7 +225,7 @@
 									},
 									"inputs": [
 										{
-											"referenceName": "ds_customer_file",
+											"referenceName": "ds_customer_file_binary",
 											"type": "DatasetReference",
 											"parameters": {
 												"file_name": {
@@ -241,12 +240,9 @@
 											"referenceName": "ds_customer_archive",
 											"type": "DatasetReference",
 											"parameters": {
-												"file_name": {
-													"value": "@item().name",
-													"type": "Expression"
-												},
+												"file_name": "@item().name",
 												"archive_folder": {
-													"value": "@concat(\n    'archive/customer/',\n    formatDateTime(utcNow(),'yyyy-MM-dd')\n)",
+													"value": "@concat('archive/customer/', formatDateTime(utcNow(),'yyyy-MM-dd'))",
 													"type": "Expression"
 												}
 											}
@@ -274,7 +270,7 @@
 									"userProperties": [],
 									"typeProperties": {
 										"dataset": {
-											"referenceName": "ds_customer_file",
+											"referenceName": "ds_customer_file_binary",
 											"type": "DatasetReference",
 											"parameters": {
 												"file_name": {
@@ -320,7 +316,7 @@
 				"[concat(variables('workspaceId'), '/dataflows/df_customer_bronze')]",
 				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]",
 				"[concat(variables('workspaceId'), '/datasets/ds_customer_landing')]",
-				"[concat(variables('workspaceId'), '/datasets/ds_customer_file')]",
+				"[concat(variables('workspaceId'), '/datasets/ds_customer_file_binary')]",
 				"[concat(variables('workspaceId'), '/datasets/ds_customer_archive')]"
 			]
 		},
@@ -1279,7 +1275,7 @@
 						"spark.dynamicAllocation.enabled": "true",
 						"spark.dynamicAllocation.minExecutors": "1",
 						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "4137fe5e-b106-4c42-a4a1-b427285011ce"
+						"spark.autotune.trackingId": "431dd3ca-389c-4138-b223-40de76feab69"
 					}
 				},
 				"metadata": {
@@ -1322,7 +1318,7 @@
 							"display(bronze_df)"
 						],
 						"outputs": [],
-						"execution_count": 8
+						"execution_count": 10
 					},
 					{
 						"cell_type": "code",
@@ -2693,6 +2689,34 @@
 						"type": "String"
 					}
 				]
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/ls_saibdpdev')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/ds_customer_file_binary')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ls_saibdpdev",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"file_name": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "Binary",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": "landing/customer",
+						"fileSystem": "synapse"
+					}
+				}
 			},
 			"dependsOn": [
 				"[concat(variables('workspaceId'), '/linkedServices/ls_saibdpdev')]"
