@@ -1,0 +1,23 @@
+{
+	"name": "ds_customer_file_binary",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_saibdpdev",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"file_name": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "Binary",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"folderPath": "landing/customer",
+				"fileSystem": "synapse"
+			}
+		}
+	}
+}
