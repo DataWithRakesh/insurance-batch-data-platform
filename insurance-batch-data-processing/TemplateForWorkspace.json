@@ -1278,7 +1278,7 @@
 						"spark.dynamicAllocation.enabled": "true",
 						"spark.dynamicAllocation.minExecutors": "1",
 						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "b6bf23d1-77d3-4b4f-88ac-ec29c452ca39"
+						"spark.autotune.trackingId": "a723ab87-8d58-4941-83f8-cff44f4ce399"
 					}
 				},
 				"metadata": {
@@ -2716,6 +2716,10 @@
 				"typeProperties": {
 					"location": {
 						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().file_name",
+							"type": "Expression"
+						},
 						"folderPath": "landing/customer",
 						"fileSystem": "synapse"
 					}
