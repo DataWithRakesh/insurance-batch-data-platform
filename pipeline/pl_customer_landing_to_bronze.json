@@ -50,7 +50,13 @@
 				"typeProperties": {
 					"dataflow": {
 						"referenceName": "df_customer_bronze",
-						"type": "DataFlowReference"
+						"type": "DataFlowReference",
+						"parameters": {
+							"batch_id": {
+								"value": "'@{pipeline().RunId}'",
+								"type": "Expression"
+							}
+						}
 					},
 					"compute": {
 						"coreCount": 8,

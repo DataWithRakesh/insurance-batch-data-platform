@@ -40,6 +40,9 @@
 				}
 			],
 			"scriptLines": [
+				"parameters{",
+				"     batch_id as string",
+				"}",
 				"source(output(",
 				"          address as string,",
 				"          city as string,",
@@ -62,7 +65,7 @@
 				"srcCustomer select(skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true) ~> selValidateSchema",
 				"selValidateSchema derive(ingestion_ts = currentUTC(),",
-				"          batch_id = 'BATCH_001') ~> drvAuditColumns",
+				"          batch_id = $batch_id) ~> drvAuditColumns",
 				"drvAuditColumns split(true(),",
 				"     false(),",
 				"     disjoint: false) ~> csValidInvalid@(Valid, Invalid)",
