@@ -161,7 +161,7 @@
 							},
 							"inputs": [
 								{
-									"referenceName": "ds_customer_landing",
+									"referenceName": "ds_customer_file",
 									"type": "DatasetReference",
 									"parameters": {
 										"file_name": {
@@ -209,7 +209,7 @@
 							"userProperties": [],
 							"typeProperties": {
 								"dataset": {
-									"referenceName": "ds_customer_landing",
+									"referenceName": "ds_customer_file",
 									"type": "DatasetReference",
 									"parameters": {
 										"file_name": {

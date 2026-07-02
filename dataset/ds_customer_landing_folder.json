@@ -1,5 +1,5 @@
 {
-	"name": "ds_customer_landing",
+	"name": "ds_customer_landing_folder",
 	"properties": {
 		"linkedServiceName": {
 			"referenceName": "ls_saibdpdev",
