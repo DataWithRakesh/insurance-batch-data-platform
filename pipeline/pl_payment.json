@@ -1,9 +1,0 @@
-{
-	"name": "pl_payment",
-	"properties": {
-		"folder": {
-			"name": "payment"
-		},
-		"annotations": []
-	}
-}
