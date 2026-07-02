@@ -1,0 +1,20 @@
+{
+	"name": "ds_customer_reject",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_saibdpdev",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"folderPath": "reject/customer",
+				"fileSystem": "synapse"
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": []
+	}
+}

@@ -20,7 +20,7 @@
 				"spark.dynamicAllocation.enabled": "true",
 				"spark.dynamicAllocation.minExecutors": "1",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "d74ab9be-2c65-4c9e-b4ae-a57af9982fe1"
+				"spark.autotune.trackingId": "2d9711af-70f2-4986-b80b-e265f8a611b4"
 			}
 		},
 		"metadata": {
@@ -67,15 +67,201 @@
 			{
 				"cell_type": "code",
 				"source": [
+					"from pyspark.sql import SparkSession\n",
 					"from pyspark.sql import functions as F\n",
-					"from pyspark.sql.types import *\n",
-					"from faker import Faker\n",
 					"import random\n",
-					"from datetime import datetime,timedelta\n",
+					"from datetime import datetime, timedelta\n",
 					"\n",
-					"faker =Faker()"
+					"spark = SparkSession.builder.getOrCreate()\n",
+					"\n",
+					""
 				],
-				"execution_count": 1
+				"execution_count": 8
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"### JDBC CONNECTION TO SQL SERVER DATABASE"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"spark = SparkSession.builder.getOrCreate()\n",
+					"\n",
+					"jdbc_url=\"jdbc:sqlserver://sql-ibdp-dev.database.windows.net:1433;database=control-db\"\n",
+					"\n",
+					"connection_properties ={\n",
+					"    \"user\":\"sqladmin\",\n",
+					"    \"password\":\"Magic@21\",\n",
+					"    \"driver\":\"com.microsoft.sqlserver.jdbc.SQLServerDriver\"\n",
+					"}"
+				],
+				"execution_count": 9
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"### READING METADATA TABLE"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"metadata = (\n",
+					"    spark.read\n",
+					"         .jdbc(\n",
+					"             url=jdbc_url,\n",
+					"             table=\"metadata\",\n",
+					"             properties=connection_properties\n",
+					"         )\n",
+					"         .filter(F.col(\"source_name\") == \"customer\")\n",
+					"         .first()\n",
+					")\n",
+					"\n",
+					"landing_path = metadata.source_path"
+				],
+				"execution_count": 10
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"### Preparing Dummy Data"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"# Lookup Data\n",
+					"first_names = [\"Rohan\",\"Amit\",\"Rahul\",\"Arjun\",\"Kiran\",\"Priya\",\"Sneha\",\"Anita\",\"Neha\",\"Pooja\"]\n",
+					"\n",
+					"last_names = [\"Sharma\",\"Patel\",\"Reddy\",\"Nayak\",\"Das\",\"Singh\",\"Verma\",\"Gupta\",\"Nair\",\"Joshi\"]\n",
+					"\n",
+					"genders = [\"Male\", \"Female\"]\n",
+					"\n",
+					"cities = {\n",
+					"    \"Bengaluru\": \"Karnataka\",\n",
+					"    \"Hyderabad\": \"Telangana\",\n",
+					"    \"Chennai\": \"Tamil Nadu\",\n",
+					"    \"Mumbai\": \"Maharashtra\",\n",
+					"    \"Pune\": \"Maharashtra\",\n",
+					"    \"Kolkata\": \"West Bengal\",\n",
+					"    \"Delhi\": \"Delhi\"\n",
+					"}\n",
+					"\n",
+					"customer_statuses = [\"Active\", \"Inactive\"]\n",
+					"\n",
+					"email_domains = [\"gmail.com\", \"yahoo.com\", \"outlook.com\"]\n",
+					"\n",
+					"street_names = [\n",
+					"    \"MG Road\",\n",
+					"    \"Brigade Road\",\n",
+					"    \"Park Street\",\n",
+					"    \"Anna Salai\",\n",
+					"    \"Banjara Hills\",\n",
+					"    \"Ring Road\"\n",
+					"]"
+				],
+				"execution_count": 14
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"### Generating dummy data"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"customer_data = []\n",
+					"\n",
+					"for i in range(1, 1001):\n",
+					"\n",
+					"    city = random.choice(list(cities.keys()))\n",
+					"\n",
+					"    customer_data.append({\n",
+					"        \"customer_id\": f\"CUST{i:06d}\",\n",
+					"        \"first_name\": random.choice(first_names),\n",
+					"        \"last_name\": random.choice(last_names),\n",
+					"        \"date_of_birth\": (datetime.now() - timedelta(days=random.randint(18 * 365, 70 * 365))).date(),\n",
+					"        \"gender\": random.choice(genders),\n",
+					"        \"email\": f\"customer{i}@{random.choice(email_domains)}\",\n",
+					"        \"phone_number\": f\"9{random.randint(100000000, 999999999)}\",\n",
+					"        \"address\": f\"{random.randint(1,999)}, {random.choice(street_names)}\",\n",
+					"        \"city\": city,\n",
+					"        \"state\": cities[city],\n",
+					"        \"zip_code\": str(random.randint(100000, 999999)),\n",
+					"        \"customer_status\": random.choice(customer_statuses),\n",
+					"        \"created_date\": datetime.now(),\n",
+					"        \"last_updated_ts\": datetime.now()\n",
+					"    })"
+				],
+				"execution_count": 15
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"collapsed": false
+				},
+				"source": [
+					"customer_df = spark.createDataFrame(customer_data)\n",
+					"\n",
+					"customer_df.printSchema()\n",
+					"customer_df.show(5,truncate=False)"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"### Writing customer data to ADLS landing zone as a csv file."
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"customer_df.coalesce(1) \\\n",
+					"    .write \\\n",
+					"    .mode(\"overwrite\") \\\n",
+					"    .option(\"header\", \"true\") \\\n",
+					"    .csv(landing_path)"
+				],
+				"execution_count": 22
 			}
 		]
 	}
