@@ -110,12 +110,18 @@
 							"dataflow": {
 								"referenceName": "df_customer_bronze",
 								"type": "DataFlowReference",
-								"parameters": {},
+								"parameters": {
+									"batch_id": {
+										"value": "'@{pipeline().RunId}'",
+										"type": "Expression"
+									}
+								},
 								"datasetParameters": {
 									"srcCustomer": {},
 									"snkBronzeCustomer": {},
 									"snkCustomerReject": {}
-								}
+								},
+								"linkedServiceParameters": {}
 							},
 							"staging": {},
 							"compute": {
@@ -136,7 +142,8 @@
 			},
 			"dependsOn": [
 				"[concat(variables('workspaceId'), '/datasets/ds_sql_metadata')]",
-				"[concat(variables('workspaceId'), '/dataflows/df_customer_bronze')]"
+				"[concat(variables('workspaceId'), '/dataflows/df_customer_bronze')]",
+				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
 			]
 		},
 		{
@@ -532,6 +539,9 @@
 						}
 					],
 					"scriptLines": [
+						"parameters{",
+						"     batch_id as string",
+						"}",
 						"source(output(",
 						"          address as string,",
 						"          city as string,",
@@ -554,7 +564,7 @@
 						"srcCustomer select(skipDuplicateMapInputs: true,",
 						"     skipDuplicateMapOutputs: true) ~> selValidateSchema",
 						"selValidateSchema derive(ingestion_ts = currentUTC(),",
-						"          batch_id = 'BATCH_001') ~> drvAuditColumns",
+						"          batch_id = $batch_id) ~> drvAuditColumns",
 						"drvAuditColumns split(true(),",
 						"     false(),",
 						"     disjoint: false) ~> csValidInvalid@(Valid, Invalid)",
@@ -1091,7 +1101,7 @@
 						"spark.dynamicAllocation.enabled": "true",
 						"spark.dynamicAllocation.minExecutors": "1",
 						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "ad9ea8d9-c15f-45b9-9a68-18f9d306f23b"
+						"spark.autotune.trackingId": "85492bd9-05d6-4912-98c8-3f750e9244bd"
 					}
 				},
 				"metadata": {
@@ -1116,13 +1126,15 @@
 						"sparkVersion": "3.5",
 						"nodeCount": 10,
 						"cores": 4,
-						"memory": 28
+						"memory": 28,
+						"automaticScaleJobs": true
 					},
 					"sessionKeepAliveTimeout": 30
 				},
 				"cells": [
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"from notebookutils import mssparkutils\n",
 							"from pyspark.sql.functions import current_timestamp, input_file_name"
@@ -1145,6 +1157,7 @@
 					},
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"df = (\n",
 							"    spark.read\n",
@@ -1160,6 +1173,7 @@
 					},
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"\n",
 							"bronze_df = (\n",
@@ -1173,6 +1187,7 @@
 					},
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"bronze_df.write \\\n",
 							"    .format(\"delta\") \\\n",
