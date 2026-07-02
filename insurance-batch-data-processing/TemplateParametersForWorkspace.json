@@ -1,0 +1,39 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"workspaceName": {
+			"value": "insurance-batch-data-processing"
+		},
+		"insurance-batch-data-processing-WorkspaceDefaultSqlServer_connectionString": {
+			"value": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=tcp:insurance-batch-data-processing.sql.azuresynapse.net,1433;Initial Catalog=@{linkedService().DBName}"
+		},
+		"insurance-data-platform-WorkspaceDefaultSqlServer_connectionString": {
+			"value": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=tcp:insurance-data-platform.sql.azuresynapse.net,1433;Initial Catalog=@{linkedService().DBName}"
+		},
+		"ls_saibdpdev_accountKey": {
+			"value": ""
+		},
+		"ls_slq_server_password": {
+			"value": ""
+		},
+		"insurance-batch-data-processing-WorkspaceDefaultStorage_properties_typeProperties_url": {
+			"value": "https://saibdpdev.dfs.core.windows.net"
+		},
+		"insurance-data-platform-WorkspaceDefaultStorage_properties_typeProperties_url": {
+			"value": "https://rakeshsynapseadlsgen2.dfs.core.windows.net"
+		},
+		"ls_saibdpdev_properties_typeProperties_url": {
+			"value": "https://saibdpdev.dfs.core.windows.net/"
+		},
+		"ls_slq_server_properties_typeProperties_server": {
+			"value": "sql-ibdp-dev.database.windows.net"
+		},
+		"ls_slq_server_properties_typeProperties_database": {
+			"value": "control-db"
+		},
+		"ls_slq_server_properties_typeProperties_userName": {
+			"value": "sqladmin"
+		}
+	}
+}
