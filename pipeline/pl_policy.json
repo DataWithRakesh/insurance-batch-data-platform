@@ -1,9 +1,0 @@
-{
-	"name": "pl_policy",
-	"properties": {
-		"folder": {
-			"name": "policy"
-		},
-		"annotations": []
-	}
-}
