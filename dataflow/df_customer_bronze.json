@@ -1,0 +1,88 @@
+{
+	"name": "df_customer_bronze",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "ds_customer_landing",
+						"type": "DatasetReference"
+					},
+					"name": "srcCustomer"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "ds_customer_bronze",
+						"type": "DatasetReference"
+					},
+					"name": "snkBronzeCustomer"
+				},
+				{
+					"dataset": {
+						"referenceName": "ds_customer_reject",
+						"type": "DatasetReference"
+					},
+					"name": "snkCustomerReject"
+				}
+			],
+			"transformations": [
+				{
+					"name": "selValidateSchema"
+				},
+				{
+					"name": "drvAuditColumns"
+				},
+				{
+					"name": "csValidInvalid"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          address as string,",
+				"          city as string,",
+				"          created_date as string,",
+				"          customer_id as string,",
+				"          customer_status as string,",
+				"          date_of_birth as string,",
+				"          email as string,",
+				"          first_name as string,",
+				"          gender as string,",
+				"          last_name as string,",
+				"          last_updated_ts as string,",
+				"          phone_number as string,",
+				"          state as string,",
+				"          zip_code as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: true,",
+				"     ignoreNoFilesFound: false) ~> srcCustomer",
+				"srcCustomer select(skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> selValidateSchema",
+				"selValidateSchema derive(ingestion_ts = currentUTC(),",
+				"          batch_id = 'BATCH_001') ~> drvAuditColumns",
+				"drvAuditColumns split(true(),",
+				"     false(),",
+				"     disjoint: false) ~> csValidInvalid@(Valid, Invalid)",
+				"csValidInvalid@Valid sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> snkBronzeCustomer",
+				"csValidInvalid@Invalid sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> snkCustomerReject"
+			]
+		}
+	}
+}

@@ -29,8 +29,8 @@
 				}
 			},
 			{
-				"name": "nb_customer_bronze_load",
-				"type": "SynapseNotebook",
+				"name": "df_customer_bronze_load",
+				"type": "ExecuteDataFlow",
 				"dependsOn": [
 					{
 						"activity": "lkp_customer_metadata",
@@ -48,50 +48,15 @@
 				},
 				"userProperties": [],
 				"typeProperties": {
-					"notebook": {
-						"referenceName": "nb_customer_bronze",
-						"type": "NotebookReference"
+					"dataflow": {
+						"referenceName": "df_customer_bronze",
+						"type": "DataFlowReference"
 					},
-					"parameters": {
-						"source_name": {
-							"value": {
-								"value": "@activity('lkp_customer_metadata').output.firstRow.source_name",
-								"type": "Expression"
-							},
-							"type": "string"
-						},
-						"landing_path": {
-							"value": {
-								"value": "@activity('lkp_customer_metadata').output.firstRow.source_path",
-								"type": "Expression"
-							},
-							"type": "string"
-						},
-						"bronze_path": {
-							"value": "@activity('lkp_customer_metadata').output.firstRow.bronze_path",
-							"type": "string"
-						},
-						"file_format": {
-							"value": "@activity('lkp_customer_metadata').output.firstRow.file_format",
-							"type": "string"
-						}
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
 					},
-					"snapshot": true,
-					"sparkPool": {
-						"referenceName": "sparksmall",
-						"type": "BigDataPoolReference"
-					},
-					"executorSize": "Small",
-					"conf": {
-						"spark.dynamicAllocation.enabled": true,
-						"spark.dynamicAllocation.minExecutors": 2,
-						"spark.dynamicAllocation.maxExecutors": 2
-					},
-					"driverSize": "Small",
-					"numExecutors": 2,
-					"authentication": {
-						"type": "MSI"
-					}
+					"traceLevel": "Fine"
 				}
 			}
 		],

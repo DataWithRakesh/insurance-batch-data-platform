@@ -10,7 +10,6 @@
 		"typeProperties": {
 			"location": {
 				"type": "AzureBlobFSLocation",
-				"fileName": "part-00000-7fa3d403-be4b-40ea-8ac6-29d65f423aa0-c000.csv",
 				"folderPath": "landing/customer",
 				"fileSystem": "synapse"
 			},
