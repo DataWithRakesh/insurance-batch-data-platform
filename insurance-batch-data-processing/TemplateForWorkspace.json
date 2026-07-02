@@ -282,7 +282,7 @@
 												}
 											}
 										},
-										"enableLogging": true,
+										"enableLogging": false,
 										"storeSettings": {
 											"type": "AzureBlobFSReadSettings",
 											"recursive": true,
@@ -1278,7 +1278,7 @@
 						"spark.dynamicAllocation.enabled": "true",
 						"spark.dynamicAllocation.minExecutors": "1",
 						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "a723ab87-8d58-4941-83f8-cff44f4ce399"
+						"spark.autotune.trackingId": "38a7feeb-2a9e-4025-86d0-d9261554e273"
 					}
 				},
 				"metadata": {
