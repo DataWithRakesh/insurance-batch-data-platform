@@ -209,7 +209,9 @@
 										"source": {
 											"type": "BinarySource",
 											"storeSettings": {
-												"type": "AzureBlobFSReadSettings"
+												"type": "AzureBlobFSReadSettings",
+												"recursive": true,
+												"deleteFilesAfterCompletion": false
 											},
 											"formatSettings": {
 												"type": "BinaryReadSettings"
@@ -218,7 +220,8 @@
 										"sink": {
 											"type": "BinarySink",
 											"storeSettings": {
-												"type": "AzureBlobFSWriteSettings"
+												"type": "AzureBlobFSWriteSettings",
+												"copyBehavior": "PreserveHierarchy"
 											}
 										},
 										"enableStaging": false
@@ -1275,7 +1278,7 @@
 						"spark.dynamicAllocation.enabled": "true",
 						"spark.dynamicAllocation.minExecutors": "1",
 						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "431dd3ca-389c-4138-b223-40de76feab69"
+						"spark.autotune.trackingId": "b6bf23d1-77d3-4b4f-88ac-ec29c452ca39"
 					}
 				},
 				"metadata": {
