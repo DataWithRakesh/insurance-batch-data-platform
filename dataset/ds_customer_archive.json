@@ -1,0 +1,33 @@
+{
+	"name": "ds_customer_archive",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_saibdpdev",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"file_name": {
+				"type": "string"
+			},
+			"archive_folder": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "Binary",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": {
+					"value": "@dataset().file_name",
+					"type": "Expression"
+				},
+				"folderPath": {
+					"value": "@dataset().archive_folder",
+					"type": "Expression"
+				},
+				"fileSystem": "synapse"
+			}
+		}
+	}
+}
