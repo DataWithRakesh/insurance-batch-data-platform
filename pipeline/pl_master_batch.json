@@ -1,9 +1,0 @@
-{
-	"name": "pl_master_batch",
-	"properties": {
-		"folder": {
-			"name": "master"
-		},
-		"annotations": []
-	}
-}
