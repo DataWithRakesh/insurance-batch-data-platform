@@ -20,7 +20,7 @@
 				"spark.dynamicAllocation.enabled": "true",
 				"spark.dynamicAllocation.minExecutors": "1",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "8ab62ffd-fd40-481e-aac3-092df8142655"
+				"spark.autotune.trackingId": "c7dd1f9e-52ac-4212-93ad-dc1663e32092"
 			}
 		},
 		"metadata": {
@@ -57,12 +57,24 @@
 					"collapsed": false
 				},
 				"source": [
-					"bronze_df = spark.read.format(\"parquet\").load(\"abfss://synapse@saibdpdev.dfs.core.windows.net/reject/customer/\")\n",
+					"bronze_df = spark.read.format(\"parquet\").load(\"abfss://synapse@saibdpdev.dfs.core.windows.net/reject/customer/part-00000-279565a2-2c19-40bf-a1c1-17ddcbf9632f-c000.snappy.parquet\")\n",
 					"display(bronze_df.count())\n",
 					"\n",
 					"display(bronze_df)"
 				],
-				"execution_count": 4
+				"execution_count": 17
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"collapsed": false
+				},
+				"source": [
+					"from pyspark.sql.functions import col\n",
+					"\n",
+					"display(bronze_df.filter(col(\"customer_id\") == \"undefined\"))"
+				],
+				"execution_count": 16
 			},
 			{
 				"cell_type": "code",
@@ -75,7 +87,7 @@
 					"\n",
 					"display(bronze_df)"
 				],
-				"execution_count": 3
+				"execution_count": 6
 			},
 			{
 				"cell_type": "code",
