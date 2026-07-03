@@ -194,110 +194,6 @@
 							},
 							"activities": [
 								{
-									"name": "cp_archive_customer_file",
-									"type": "Copy",
-									"dependsOn": [
-										{
-											"activity": "if_csv_file",
-											"dependencyConditions": [
-												"Succeeded"
-											]
-										}
-									],
-									"policy": {
-										"timeout": "0.12:00:00",
-										"retry": 0,
-										"retryIntervalInSeconds": 30,
-										"secureOutput": false,
-										"secureInput": false
-									},
-									"userProperties": [],
-									"typeProperties": {
-										"source": {
-											"type": "BinarySource",
-											"storeSettings": {
-												"type": "AzureBlobFSReadSettings",
-												"recursive": true,
-												"deleteFilesAfterCompletion": false
-											},
-											"formatSettings": {
-												"type": "BinaryReadSettings"
-											}
-										},
-										"sink": {
-											"type": "BinarySink",
-											"storeSettings": {
-												"type": "AzureBlobFSWriteSettings",
-												"copyBehavior": "PreserveHierarchy"
-											}
-										},
-										"enableStaging": false
-									},
-									"inputs": [
-										{
-											"referenceName": "ds_customer_file_binary",
-											"type": "DatasetReference",
-											"parameters": {
-												"file_name": {
-													"value": "@item().name",
-													"type": "Expression"
-												}
-											}
-										}
-									],
-									"outputs": [
-										{
-											"referenceName": "ds_customer_archive",
-											"type": "DatasetReference",
-											"parameters": {
-												"file_name": "@item().name",
-												"archive_folder": {
-													"value": "@concat('archive/customer/', formatDateTime(utcNow(),'yyyy-MM-dd'))",
-													"type": "Expression"
-												}
-											}
-										}
-									]
-								},
-								{
-									"name": "del_landing_file",
-									"type": "Delete",
-									"dependsOn": [
-										{
-											"activity": "cp_archive_customer_file",
-											"dependencyConditions": [
-												"Succeeded"
-											]
-										}
-									],
-									"policy": {
-										"timeout": "0.12:00:00",
-										"retry": 0,
-										"retryIntervalInSeconds": 30,
-										"secureOutput": false,
-										"secureInput": false
-									},
-									"userProperties": [],
-									"typeProperties": {
-										"dataset": {
-											"referenceName": "ds_customer_file_binary",
-											"type": "DatasetReference",
-											"parameters": {
-												"file_name": {
-													"value": "@item().name",
-													"type": "Expression"
-												}
-											}
-										},
-										"enableLogging": false,
-										"storeSettings": {
-											"type": "AzureBlobFSReadSettings",
-											"recursive": true,
-											"enablePartitionDiscovery": false
-										}
-									}
-								},
-								{
 									"name": "if_csv_file",
 									"type": "IfCondition",
 									"dependsOn": [],
@@ -306,7 +202,108 @@
 										"expression": {
 											"value": "@endsWith(item().name, '.csv')",
 											"type": "Expression"
-										}
+										},
+										"ifTrueActivities": [
+											{
+												"name": "cp_archive_customer_file",
+												"type": "Copy",
+												"dependsOn": [],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"source": {
+														"type": "BinarySource",
+														"storeSettings": {
+															"type": "AzureBlobFSReadSettings",
+															"recursive": true
+														},
+														"formatSettings": {
+															"type": "BinaryReadSettings"
+														}
+													},
+													"sink": {
+														"type": "BinarySink",
+														"storeSettings": {
+															"type": "AzureBlobFSWriteSettings",
+															"copyBehavior": "PreserveHierarchy"
+														}
+													},
+													"enableStaging": false
+												},
+												"inputs": [
+													{
+														"referenceName": "ds_customer_file_binary",
+														"type": "DatasetReference",
+														"parameters": {
+															"file_name": {
+																"value": "@item.name()",
+																"type": "Expression"
+															}
+														}
+													}
+												],
+												"outputs": [
+													{
+														"referenceName": "ds_customer_archive",
+														"type": "DatasetReference",
+														"parameters": {
+															"file_name": {
+																"value": "@item().name",
+																"type": "Expression"
+															},
+															"archive_folder": {
+																"value": "@concat('archive/customer/', formatDateTime(utcNow(),'yyyy-MM-dd'))",
+																"type": "Expression"
+															}
+														}
+													}
+												]
+											},
+											{
+												"name": "del_landing_file",
+												"type": "Delete",
+												"dependsOn": [
+													{
+														"activity": "cp_archive_customer_file",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"dataset": {
+														"referenceName": "ds_customer_file_binary",
+														"type": "DatasetReference",
+														"parameters": {
+															"file_name": {
+																"value": "@item().name",
+																"type": "Expression"
+															}
+														}
+													},
+													"enableLogging": true,
+													"storeSettings": {
+														"type": "AzureBlobFSReadSettings",
+														"recursive": true,
+														"enablePartitionDiscovery": false
+													}
+												}
+											}
+										]
 									}
 								}
 							]
@@ -1530,10 +1527,13 @@
 						"     skipDuplicateMapOutputs: true) ~> selValidateSchema",
 						"selValidateSchema derive(ingestion_ts = currentUTC(),",
 						"          batch_id = $batch_id) ~> drvAuditColumns",
-						"drvAuditColumns split(true(),",
+						"drvAuditColumns split(!isNull(customer_id) && trim(customer_id) != '' &&",
+						"!isNull(first_name) && trim(first_name) != '' &&",
+						"!isNull(last_name) && trim(last_name) != '' &&",
+						"!isNull(email) && trim(email) != '',",
 						"     false(),",
-						"     disjoint: false) ~> csValidInvalid@(Valid, Invalid)",
-						"csValidInvalid@Valid sink(allowSchemaDrift: true,",
+						"     disjoint: false) ~> csValidInvalid@(ValidRecords, RejectedRecords)",
+						"csValidInvalid@ValidRecords sink(allowSchemaDrift: true,",
 						"     validateSchema: false,",
 						"     format: 'parquet',",
 						"     umask: 0022,",
@@ -1541,7 +1541,7 @@
 						"     postCommands: [],",
 						"     skipDuplicateMapInputs: true,",
 						"     skipDuplicateMapOutputs: true) ~> snkBronzeCustomer",
-						"csValidInvalid@Invalid sink(allowSchemaDrift: true,",
+						"csValidInvalid@RejectedRecords sink(allowSchemaDrift: true,",
 						"     validateSchema: false,",
 						"     format: 'parquet',",
 						"     umask: 0022,",
@@ -2066,7 +2066,7 @@
 						"spark.dynamicAllocation.enabled": "true",
 						"spark.dynamicAllocation.minExecutors": "1",
 						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "c5abcb49-5407-47bc-9be1-e9345a5b9f72"
+						"spark.autotune.trackingId": "ace28012-f532-4ab6-b585-de9413bcb1ae"
 					}
 				},
 				"metadata": {
@@ -2091,11 +2091,26 @@
 						"sparkVersion": "3.5",
 						"nodeCount": 10,
 						"cores": 4,
-						"memory": 28
+						"memory": 28,
+						"automaticScaleJobs": true
 					},
 					"sessionKeepAliveTimeout": 30
 				},
 				"cells": [
+					{
+						"cell_type": "code",
+						"metadata": {
+							"collapsed": false
+						},
+						"source": [
+							"bronze_df = spark.read.format(\"parquet\").load(\"abfss://synapse@saibdpdev.dfs.core.windows.net/reject/customer/\")\n",
+							"display(bronze_df.count())\n",
+							"\n",
+							"display(bronze_df)"
+						],
+						"outputs": [],
+						"execution_count": 1
+					},
 					{
 						"cell_type": "code",
 						"metadata": {
@@ -2108,10 +2123,11 @@
 							"display(bronze_df)"
 						],
 						"outputs": [],
-						"execution_count": 10
+						"execution_count": 2
 					},
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"from notebookutils import mssparkutils\n",
 							"from pyspark.sql.functions import current_timestamp, input_file_name"
@@ -2134,6 +2150,7 @@
 					},
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"df = (\n",
 							"    spark.read\n",
@@ -2149,6 +2166,7 @@
 					},
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"\n",
 							"bronze_df = (\n",
@@ -2162,6 +2180,7 @@
 					},
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"bronze_df.write \\\n",
 							"    .format(\"delta\") \\\n",
