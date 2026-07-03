@@ -5,7 +5,14 @@
 			{
 				"name": "lkp_customer_metadata",
 				"type": "Lookup",
-				"dependsOn": [],
+				"dependsOn": [
+					{
+						"activity": "sp_insert_pipeline_run",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
 				"policy": {
 					"timeout": "0.12:00:00",
 					"retry": 0,
@@ -70,7 +77,7 @@
 				"type": "GetMetadata",
 				"dependsOn": [
 					{
-						"activity": "df_customer_bronze_load",
+						"activity": "set_records_rejected_after_df",
 						"dependencyConditions": [
 							"Succeeded"
 						]
@@ -94,6 +101,7 @@
 					],
 					"storeSettings": {
 						"type": "AzureBlobFSReadSettings",
+						"recursive": true,
 						"enablePartitionDiscovery": false
 					},
 					"formatSettings": {
@@ -237,8 +245,473 @@
 						}
 					]
 				}
+			},
+			{
+				"name": "sp_insert_pipeline_run",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "set_records_rejected",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[dbo].[sp_insert_pipeline_run]",
+					"storedProcedureParameters": {
+						"batch_date": {
+							"value": "@formatDateTime(utcNow(),'yyyy-MM-dd')",
+							"type": "DateTime"
+						},
+						"error_message": {
+							"value": "",
+							"type": "String"
+						},
+						"pipeline_name": {
+							"value": "@pipeline().Pipeline",
+							"type": "String"
+						},
+						"run_id": {
+							"value": "@pipeline().RunId",
+							"type": "String"
+						},
+						"start_time": {
+							"value": "@utcNow()",
+							"type": "DateTime"
+						},
+						"status": {
+							"value": "RUNNING",
+							"type": "String"
+						},
+						"triggered_by": {
+							"value": "Manual",
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_slq_server",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "sp_update_pipeline_run_success",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "fe_archive_customer_files",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[dbo].[sp_update_pipeline_run]",
+					"storedProcedureParameters": {
+						"end_time": {
+							"value": "@utcNow()",
+							"type": "DateTime"
+						},
+						"error_message": {
+							"value": "",
+							"type": "String"
+						},
+						"run_id": {
+							"value": "@pipeline().RunId",
+							"type": "String"
+						},
+						"status": {
+							"value": "SUCCESS",
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_slq_server",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "sp_update_pipeline_run_failed",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "fe_archive_customer_files",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[dbo].[sp_update_pipeline_run]",
+					"storedProcedureParameters": {
+						"end_time": {
+							"value": "@utcNow()",
+							"type": "DateTime"
+						},
+						"error_message": {
+							"value": {
+								"value": "@activity('fe_archive_customer_files').error.message",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"run_id": {
+							"value": "@pipeline().RunId",
+							"type": "String"
+						},
+						"status": {
+							"value": "FAILED",
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_slq_server",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "sp_insert_error_log",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "sp_update_pipeline_run_failed",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[dbo].[sp_insert_error_log]",
+					"storedProcedureParameters": {
+						"batch_date": {
+							"value": {
+								"value": "@formatDateTime(utcNow(),'yyyy-MM-dd')",
+								"type": "Expression"
+							},
+							"type": "DateTime"
+						},
+						"error_message": {
+							"value": "@activity('fe_archive_customer_files').error.message",
+							"type": "String"
+						},
+						"error_timestamp": {
+							"value": "@utcNow()",
+							"type": "DateTime"
+						},
+						"layer": {
+							"value": "Bronze",
+							"type": "String"
+						},
+						"notebook_name": {
+							"value": "",
+							"type": "String"
+						},
+						"pipeline_name": {
+							"value": "@pipeline().Pipeline",
+							"type": "String"
+						},
+						"run_id": {
+							"value": "@pipeline().RunId",
+							"type": "String"
+						},
+						"source_name": {
+							"value": "customer",
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_slq_server",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "sp_insert_audit_log",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "set_duration_seconds",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[dbo].[sp_insert_audit_log]",
+					"storedProcedureParameters": {
+						"batch_date": {
+							"value": "@formatDateTime(utcNow(),'yyyy-MM-dd')",
+							"type": "DateTime"
+						},
+						"duration_seconds": {
+							"value": "@variables('v_duration_seconds')",
+							"type": "Int32"
+						},
+						"end_time": {
+							"value": "@utcNow()",
+							"type": "DateTime"
+						},
+						"layer": {
+							"value": "Bronze",
+							"type": "String"
+						},
+						"records_read": {
+							"value": "@variables('v_records_read')",
+							"type": "Int32"
+						},
+						"records_rejected": {
+							"value": "@variables('v_records_rejected')",
+							"type": "Int32"
+						},
+						"records_written": {
+							"value": "@variables('v_records_written')",
+							"type": "Int32"
+						},
+						"run_id": {
+							"value": "@pipeline().RunId",
+							"type": "String"
+						},
+						"source_name": {
+							"value": "customer",
+							"type": "String"
+						},
+						"start_time": {
+							"value": "@variables('v_start_time')",
+							"type": "DateTime"
+						},
+						"status": {
+							"value": "SUCCESS",
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_slq_server",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "set_start_time",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "v_start_time",
+					"value": "@utcNow()"
+				}
+			},
+			{
+				"name": "set_records_read",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "set_start_time",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "v_records_read",
+					"value": 0
+				}
+			},
+			{
+				"name": "set_records_written",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "set_records_read",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "v_records_written",
+					"value": 0
+				}
+			},
+			{
+				"name": "set_records_rejected",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "set_records_written",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "v_records_rejected",
+					"value": 0
+				}
+			},
+			{
+				"name": "set_records_read_after_df",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "df_customer_bronze_load",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "v_records_read",
+					"value": 1000
+				}
+			},
+			{
+				"name": "set_records_written_after_df",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "set_records_read_after_df",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "v_records_written",
+					"value": 1000
+				}
+			},
+			{
+				"name": "set_records_rejected_after_df",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "set_records_written_after_df",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "v_records_rejected",
+					"value": 0
+				}
+			},
+			{
+				"name": "set_duration_seconds",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "sp_update_pipeline_run_success",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "v_duration_seconds",
+					"value": "@div(sub(ticks(utcNow()),ticks(variables('v_start_time'))),10000000)"
+				}
 			}
 		],
+		"variables": {
+			"v_start_time": {
+				"type": "String"
+			},
+			"v_records_read": {
+				"type": "Integer"
+			},
+			"v_records_written": {
+				"type": "Integer"
+			},
+			"v_records_rejected": {
+				"type": "Integer"
+			},
+			"v_duration_seconds": {
+				"type": "Integer"
+			}
+		},
 		"folder": {
 			"name": "customer"
 		},
