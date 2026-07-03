@@ -176,7 +176,7 @@
 												"type": "DatasetReference",
 												"parameters": {
 													"file_name": {
-														"value": "@item.name()",
+														"value": "@item().name",
 														"type": "Expression"
 													}
 												}
@@ -229,7 +229,7 @@
 													}
 												}
 											},
-											"enableLogging": true,
+											"enableLogging": false,
 											"storeSettings": {
 												"type": "AzureBlobFSReadSettings",
 												"recursive": true,
