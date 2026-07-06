@@ -20,7 +20,7 @@
 				"spark.dynamicAllocation.enabled": "true",
 				"spark.dynamicAllocation.minExecutors": "1",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "322dbd8a-1d7a-421f-8d7c-b78263b22ef5"
+				"spark.autotune.trackingId": "3889a753-da29-4224-9134-9fb206175815"
 			}
 		},
 		"metadata": {
@@ -84,7 +84,7 @@
 					"\n",
 					"sql_username = mssparkutils.credentials.getSecret(\n",
 					"    \"kv-ibdp-dev\",\n",
-					"    \"sql-ibdp-project\",\n",
+					"    \"sql-ibdp-username\",\n",
 					"    \"ls_keyvault\"\n",
 					")\n",
 					"\n",
@@ -94,7 +94,7 @@
 					"    \"ls_keyvault\"\n",
 					")"
 				],
-				"execution_count": 12
+				"execution_count": 18
 			},
 			{
 				"cell_type": "code",
@@ -103,7 +103,7 @@
 					"# JDBC Connection Configuration\n",
 					"# ==========================================================\n",
 					"\n",
-					"sql_server = \"sql-ibdp-dev.database.windows.net.database.windows.net\"\n",
+					"sql_server = \"sql-ibdp-dev.database.windows.net\"\n",
 					"database_name = \"control-db\"\n",
 					"\n",
 					"jdbc_url = (\n",
@@ -116,12 +116,12 @@
 					")\n",
 					"\n",
 					"jdbc_properties = {\n",
-					"    \"user\": \"<username>\",\n",
-					"    \"password\": \"<password>\",\n",
+					"    \"user\": sql_username,\n",
+					"    \"password\": sql_password,\n",
 					"    \"driver\": \"com.microsoft.sqlserver.jdbc.SQLServerDriver\"\n",
 					"}"
 				],
-				"execution_count": null
+				"execution_count": 24
 			},
 			{
 				"cell_type": "code",
@@ -142,7 +142,27 @@
 					"\n",
 					""
 				],
-				"execution_count": 10
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"collapsed": false
+				},
+				"source": [
+					"# ==========================================================\n",
+					"# Read Watermark\n",
+					"# ==========================================================\n",
+					"\n",
+					"watermark_df = spark.read.jdbc(\n",
+					"    url=jdbc_url,\n",
+					"    table=\"(SELECT * FROM dbo.watermark WHERE source_name='customer') wm\",\n",
+					"    properties=jdbc_properties\n",
+					")\n",
+					"\n",
+					"display(watermark_df)"
+				],
+				"execution_count": 26
 			}
 		]
 	}
