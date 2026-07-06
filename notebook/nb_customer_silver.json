@@ -20,7 +20,7 @@
 				"spark.dynamicAllocation.enabled": "true",
 				"spark.dynamicAllocation.minExecutors": "1",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "3889a753-da29-4224-9134-9fb206175815"
+				"spark.autotune.trackingId": "7c96b6a7-c40b-4a8b-ba15-e23d23fa577d"
 			}
 		},
 		"metadata": {
@@ -135,11 +135,18 @@
 					"bronze_path = f\"abfss://{container_name}@{storage_account}.dfs.core.windows.net/bronze/customer/\"\n",
 					"silver_path = f\"abfss://{container_name}@{storage_account}.dfs.core.windows.net/silver/customer/\"\n",
 					"\n",
-					"df_bronze = spark.read.format(\"parquet\").load(bronze_path)\n",
-					"bronze_record_count = df_bronze.count()\n",
+					"bronze_df = spark.read.format(\"parquet\").load(bronze_path)\n",
+					"bronze_record_count = bronze_df.count()\n",
 					"print(f\"Records Read: {bronze_record_count}\")\n",
-					"display(df_bronze)\n",
+					"display(bronze_df)\n",
 					"\n",
+					""
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"source": [
 					""
 				],
 				"execution_count": null
@@ -162,7 +169,45 @@
 					"\n",
 					"display(watermark_df)"
 				],
-				"execution_count": 26
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"# ==========================================================\n",
+					"# Read Last Watermark Value\n",
+					"# ==========================================================\n",
+					"\n",
+					"if watermark_df.count() >0:\n",
+					"    last_watermark_value = watermark_df.first()[\"last_watermark_value\"]\n",
+					"else:\n",
+					"    last_watermark_value = None\n",
+					"\n",
+					"print(f\"Last watermark value is : {last_watermark_value}\")"
+				],
+				"execution_count": 28
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"# ==========================================================\n",
+					"# Incremental Filter (CDC)\n",
+					"# ==========================================================\n",
+					"\n",
+					"if last_watermark_value :\n",
+					"    df_incremental = (bronze_df\n",
+					"                        .filter(col(\"last_updated_ts\") > lit(last_watermark_value))  \n",
+					"                    )\n",
+					"else:\n",
+					"    # First run - process everything\n",
+					"    print(\"This is first run... Processing everything...\")\n",
+					"    df_incremental = df_bronze\n",
+					"\n",
+					"incremental_record_count = df_incremental.count()\n",
+					"print(f\"Incremental records count : {incremental_record_count}\")\n",
+					"display(incremental_record_count)"
+				],
+				"execution_count": null
 			}
 		]
 	}
