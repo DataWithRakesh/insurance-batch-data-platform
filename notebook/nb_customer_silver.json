@@ -6,17 +6,21 @@
 		},
 		"nbformat": 4,
 		"nbformat_minor": 2,
+		"bigDataPool": {
+			"referenceName": "sparksmall",
+			"type": "BigDataPoolReference"
+		},
 		"sessionProperties": {
 			"driverMemory": "28g",
 			"driverCores": 4,
 			"executorMemory": "28g",
 			"executorCores": 4,
-			"numExecutors": 2,
+			"numExecutors": 1,
 			"conf": {
-				"spark.dynamicAllocation.enabled": "false",
-				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.enabled": "true",
+				"spark.dynamicAllocation.minExecutors": "1",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "66832c75-d042-4a05-a15a-b26f0ed23d8d"
+				"spark.autotune.trackingId": "322dbd8a-1d7a-421f-8d7c-b78263b22ef5"
 			}
 		},
 		"metadata": {
@@ -24,10 +28,25 @@
 			"enableDebugMode": false,
 			"kernelspec": {
 				"name": "synapse_pyspark",
-				"display_name": "python"
+				"display_name": "Synapse PySpark"
 			},
 			"language_info": {
 				"name": "python"
+			},
+			"a365ComputeOptions": {
+				"id": "/subscriptions/c2cd82ac-1b67-4f57-ae79-64d3e1739263/resourceGroups/rg-ibdp-dev/providers/Microsoft.Synapse/workspaces/insurance-batch-data-processing/bigDataPools/sparksmall",
+				"name": "sparksmall",
+				"type": "Spark",
+				"endpoint": "https://insurance-batch-data-processing.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/sparksmall",
+				"auth": {
+					"type": "AAD",
+					"authResource": "https://dev.azuresynapse.net"
+				},
+				"sparkVersion": "3.5",
+				"nodeCount": 10,
+				"cores": 4,
+				"memory": 28,
+				"automaticScaleJobs": true
 			},
 			"sessionKeepAliveTimeout": 30
 		},
@@ -35,9 +54,95 @@
 			{
 				"cell_type": "code",
 				"source": [
-					""
+					"# ==========================================================\n",
+					"# Customer Silver Notebook\n",
+					"# Layer : Silver\n",
+					"# Purpose : Incremental Processing using Delta Lake MERGE\n",
+					"# =========================================================="
+				],
+				"execution_count": 8
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"from pyspark.sql.functions import *\n",
+					"from pyspark.sql.types import *\n",
+					"from delta.tables import DeltaTable\n",
+					"from pyspark.sql.window import Window"
 				],
 				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"# ==========================================================\n",
+					"# keyvault Connection Configuration\n",
+					"# ==========================================================\n",
+					"\n",
+					"\n",
+					"from notebookutils import mssparkutils\n",
+					"\n",
+					"sql_username = mssparkutils.credentials.getSecret(\n",
+					"    \"kv-ibdp-dev\",\n",
+					"    \"sql-ibdp-project\",\n",
+					"    \"ls_keyvault\"\n",
+					")\n",
+					"\n",
+					"sql_password = mssparkutils.credentials.getSecret(\n",
+					"    \"kv-ibdp-dev\",\n",
+					"    \"sql-ibdp-password\",\n",
+					"    \"ls_keyvault\"\n",
+					")"
+				],
+				"execution_count": 12
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"# ==========================================================\n",
+					"# JDBC Connection Configuration\n",
+					"# ==========================================================\n",
+					"\n",
+					"sql_server = \"sql-ibdp-dev.database.windows.net.database.windows.net\"\n",
+					"database_name = \"control-db\"\n",
+					"\n",
+					"jdbc_url = (\n",
+					"    f\"jdbc:sqlserver://{sql_server}:1433;\"\n",
+					"    f\"database={database_name};\"\n",
+					"    \"encrypt=true;\"\n",
+					"    \"trustServerCertificate=false;\"\n",
+					"    \"hostNameInCertificate=*.database.windows.net;\"\n",
+					"    \"loginTimeout=30;\"\n",
+					")\n",
+					"\n",
+					"jdbc_properties = {\n",
+					"    \"user\": \"<username>\",\n",
+					"    \"password\": \"<password>\",\n",
+					"    \"driver\": \"com.microsoft.sqlserver.jdbc.SQLServerDriver\"\n",
+					"}"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"collapsed": false
+				},
+				"source": [
+					"storage_account = \"saibdpdev\"\n",
+					"container_name = \"synapse\"\n",
+					"\n",
+					"bronze_path = f\"abfss://{container_name}@{storage_account}.dfs.core.windows.net/bronze/customer/\"\n",
+					"silver_path = f\"abfss://{container_name}@{storage_account}.dfs.core.windows.net/silver/customer/\"\n",
+					"\n",
+					"df_bronze = spark.read.format(\"parquet\").load(bronze_path)\n",
+					"bronze_record_count = df_bronze.count()\n",
+					"print(f\"Records Read: {bronze_record_count}\")\n",
+					"display(df_bronze)\n",
+					"\n",
+					""
+				],
+				"execution_count": 10
 			}
 		]
 	}
