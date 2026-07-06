@@ -2,7 +2,7 @@
 	"name": "nb_customer_gold",
 	"properties": {
 		"folder": {
-			"name": "customer"
+			"name": "notebooks/gold"
 		},
 		"nbformat": 4,
 		"nbformat_minor": 2,

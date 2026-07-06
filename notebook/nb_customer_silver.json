@@ -2,7 +2,7 @@
 	"name": "nb_customer_silver",
 	"properties": {
 		"folder": {
-			"name": "customer"
+			"name": "notebooks/silver"
 		},
 		"nbformat": 4,
 		"nbformat_minor": 2,
@@ -45,8 +45,7 @@
 				"sparkVersion": "3.5",
 				"nodeCount": 10,
 				"cores": 4,
-				"memory": 28,
-				"automaticScaleJobs": true
+				"memory": 28
 			},
 			"sessionKeepAliveTimeout": 30
 		},
