@@ -15,17 +15,17 @@
 			"sinks": [
 				{
 					"dataset": {
-						"referenceName": "ds_customer_bronze",
-						"type": "DatasetReference"
-					},
-					"name": "snkBronzeCustomer"
-				},
-				{
-					"dataset": {
 						"referenceName": "ds_customer_reject",
 						"type": "DatasetReference"
 					},
 					"name": "snkCustomerReject"
+				},
+				{
+					"dataset": {
+						"referenceName": "ds_customer_bronze",
+						"type": "DatasetReference"
+					},
+					"name": "snkCustomerBronze"
 				}
 			],
 			"transformations": [
@@ -59,24 +59,23 @@
 				"          state as string,",
 				"          zip_code as string",
 				"     ),",
-				"     allowSchemaDrift: true,",
+				"     allowSchemaDrift: false,",
 				"     validateSchema: true,",
 				"     ignoreNoFilesFound: false) ~> srcCustomer",
 				"srcCustomer select(skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true) ~> selValidateSchema",
 				"selValidateSchema derive(ingestion_ts = currentUTC(),",
-				"          batch_id = $batch_id) ~> drvAuditColumns",
-				"drvAuditColumns split(!isNull(first_name) && trim(first_name) != '',",
-				"     false(),",
-				"     disjoint: false) ~> csValidInvalid@(ValidRecords, RejectedRecords)",
-				"csValidInvalid@ValidRecords sink(allowSchemaDrift: true,",
-				"     validateSchema: false,",
-				"     format: 'parquet',",
-				"     umask: 0022,",
-				"     preCommands: [],",
-				"     postCommands: [],",
-				"     skipDuplicateMapInputs: true,",
-				"     skipDuplicateMapOutputs: true) ~> snkBronzeCustomer",
+				"          batch_id = $batch_id,",
+				"          debug_customer_id_null = isNull(customer_id),",
+				"          debug_first_name_null = isNull(first_name),",
+				"          debug_customer_id = customer_id,",
+				"          debug_first_name = first_name) ~> drvAuditColumns",
+				"drvAuditColumns split(isNull(customer_id)",
+				"|| isNull(first_name)",
+				"|| isNull(last_name)",
+				"|| isNull(email),",
+				"     true(),",
+				"     disjoint: false) ~> csValidInvalid@(RejectedRecords, ValidRecords)",
 				"csValidInvalid@RejectedRecords sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     format: 'parquet',",
@@ -84,7 +83,15 @@
 				"     preCommands: [],",
 				"     postCommands: [],",
 				"     skipDuplicateMapInputs: true,",
-				"     skipDuplicateMapOutputs: true) ~> snkCustomerReject"
+				"     skipDuplicateMapOutputs: true) ~> snkCustomerReject",
+				"csValidInvalid@ValidRecords sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> snkCustomerBronze"
 			]
 		}
 	}
