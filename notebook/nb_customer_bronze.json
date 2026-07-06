@@ -20,7 +20,7 @@
 				"spark.dynamicAllocation.enabled": "true",
 				"spark.dynamicAllocation.minExecutors": "1",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "bb5995d4-3fc0-405c-9d56-3129070ff1d1"
+				"spark.autotune.trackingId": "f85d3c08-ad81-46ee-a2b7-4b0097869a6b"
 			}
 		},
 		"metadata": {
@@ -57,12 +57,12 @@
 					"collapsed": false
 				},
 				"source": [
-					"bronze_df = spark.read.format(\"parquet\").load(\"abfss://synapse@saibdpdev.dfs.core.windows.net/bronze/customer/\")\n",
+					"bronze_df = spark.read.format(\"parquet\").load(\"abfss://synapse@saibdpdev.dfs.core.windows.net/reject/customer/\")\n",
 					"display(bronze_df.count())\n",
 					"\n",
 					"display(bronze_df)"
 				],
-				"execution_count": null
+				"execution_count": 2
 			},
 			{
 				"cell_type": "code",

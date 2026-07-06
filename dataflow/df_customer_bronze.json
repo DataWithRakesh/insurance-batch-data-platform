@@ -66,7 +66,7 @@
 				"     skipDuplicateMapOutputs: true) ~> selValidateSchema",
 				"selValidateSchema derive(ingestion_ts = currentUTC(),",
 				"          batch_id = $batch_id) ~> drvAuditColumns",
-				"drvAuditColumns split(isNull(customer_id),",
+				"drvAuditColumns split(!isNull(first_name),",
 				"     false(),",
 				"     disjoint: false) ~> csValidInvalid@(ValidRecords, RejectedRecords)",
 				"csValidInvalid@ValidRecords sink(allowSchemaDrift: true,",
