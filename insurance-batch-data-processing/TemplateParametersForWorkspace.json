@@ -34,6 +34,9 @@
 		},
 		"ls_slq_server_properties_typeProperties_userName": {
 			"value": "sqladmin"
+		},
+		"ls_keyvault_properties_typeProperties_baseUrl": {
+			"value": "https://kv-ibdp-dev.vault.azure.net/"
 		}
 	}
 }

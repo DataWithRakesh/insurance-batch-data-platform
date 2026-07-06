@@ -48,6 +48,10 @@
 		"ls_slq_server_properties_typeProperties_userName": {
 			"type": "string",
 			"defaultValue": "sqladmin"
+		},
+		"ls_keyvault_properties_typeProperties_baseUrl": {
+			"type": "string",
+			"defaultValue": "https://kv-ibdp-dev.vault.azure.net/"
 		}
 	},
 	"variables": {
@@ -125,8 +129,8 @@
 								},
 								"datasetParameters": {
 									"srcCustomer": {},
-									"snkBronzeCustomer": {},
-									"snkCustomerReject": {}
+									"snkCustomerReject": {},
+									"snkCustomerBronze": {}
 								}
 							},
 							"staging": {},
@@ -1476,17 +1480,17 @@
 					"sinks": [
 						{
 							"dataset": {
-								"referenceName": "ds_customer_bronze",
-								"type": "DatasetReference"
-							},
-							"name": "snkBronzeCustomer"
-						},
-						{
-							"dataset": {
 								"referenceName": "ds_customer_reject",
 								"type": "DatasetReference"
 							},
 							"name": "snkCustomerReject"
+						},
+						{
+							"dataset": {
+								"referenceName": "ds_customer_bronze",
+								"type": "DatasetReference"
+							},
+							"name": "snkCustomerBronze"
 						}
 					],
 					"transformations": [
@@ -1520,24 +1524,23 @@
 						"          state as string,",
 						"          zip_code as string",
 						"     ),",
-						"     allowSchemaDrift: true,",
+						"     allowSchemaDrift: false,",
 						"     validateSchema: true,",
 						"     ignoreNoFilesFound: false) ~> srcCustomer",
 						"srcCustomer select(skipDuplicateMapInputs: true,",
 						"     skipDuplicateMapOutputs: true) ~> selValidateSchema",
 						"selValidateSchema derive(ingestion_ts = currentUTC(),",
-						"          batch_id = $batch_id) ~> drvAuditColumns",
-						"drvAuditColumns split(isNull(customer_id),",
-						"     false(),",
-						"     disjoint: false) ~> csValidInvalid@(ValidRecords, RejectedRecords)",
-						"csValidInvalid@ValidRecords sink(allowSchemaDrift: true,",
-						"     validateSchema: false,",
-						"     format: 'parquet',",
-						"     umask: 0022,",
-						"     preCommands: [],",
-						"     postCommands: [],",
-						"     skipDuplicateMapInputs: true,",
-						"     skipDuplicateMapOutputs: true) ~> snkBronzeCustomer",
+						"          batch_id = $batch_id,",
+						"          debug_customer_id_null = isNull(customer_id),",
+						"          debug_first_name_null = isNull(first_name),",
+						"          debug_customer_id = customer_id,",
+						"          debug_first_name = first_name) ~> drvAuditColumns",
+						"drvAuditColumns split(isNull(customer_id)",
+						"|| isNull(first_name)",
+						"|| isNull(last_name)",
+						"|| isNull(email),",
+						"     true(),",
+						"     disjoint: false) ~> csValidInvalid@(RejectedRecords, ValidRecords)",
 						"csValidInvalid@RejectedRecords sink(allowSchemaDrift: true,",
 						"     validateSchema: false,",
 						"     format: 'parquet',",
@@ -1545,14 +1548,22 @@
 						"     preCommands: [],",
 						"     postCommands: [],",
 						"     skipDuplicateMapInputs: true,",
-						"     skipDuplicateMapOutputs: true) ~> snkCustomerReject"
+						"     skipDuplicateMapOutputs: true) ~> snkCustomerReject",
+						"csValidInvalid@ValidRecords sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     format: 'parquet',",
+						"     umask: 0022,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> snkCustomerBronze"
 					]
 				}
 			},
 			"dependsOn": [
 				"[concat(variables('workspaceId'), '/datasets/ds_customer_landing')]",
-				"[concat(variables('workspaceId'), '/datasets/ds_customer_bronze')]",
-				"[concat(variables('workspaceId'), '/datasets/ds_customer_reject')]"
+				"[concat(variables('workspaceId'), '/datasets/ds_customer_reject')]",
+				"[concat(variables('workspaceId'), '/datasets/ds_customer_bronze')]"
 			]
 		},
 		{
@@ -1562,294 +1573,6 @@
 			"properties": {
 				"type": "ManagedIdentity",
 				"typeProperties": {}
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/nb_agent_bronze')]",
-			"type": "Microsoft.Synapse/workspaces/notebooks",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"folder": {
-					"name": "agent"
-				},
-				"nbformat": 4,
-				"nbformat_minor": 2,
-				"sessionProperties": {
-					"driverMemory": "28g",
-					"driverCores": 4,
-					"executorMemory": "28g",
-					"executorCores": 4,
-					"numExecutors": 2,
-					"conf": {
-						"spark.dynamicAllocation.enabled": "false",
-						"spark.dynamicAllocation.minExecutors": "2",
-						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "b68afd6c-73d9-4c43-a376-9ace050fa1a6"
-					}
-				},
-				"metadata": {
-					"saveOutput": true,
-					"enableDebugMode": false,
-					"kernelspec": {
-						"name": "synapse_pyspark",
-						"display_name": "python"
-					},
-					"language_info": {
-						"name": "python"
-					},
-					"sessionKeepAliveTimeout": 30
-				},
-				"cells": [
-					{
-						"cell_type": "code",
-						"source": [
-							""
-						],
-						"outputs": [],
-						"execution_count": null
-					}
-				]
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/nb_agent_gold')]",
-			"type": "Microsoft.Synapse/workspaces/notebooks",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"folder": {
-					"name": "agent"
-				},
-				"nbformat": 4,
-				"nbformat_minor": 2,
-				"sessionProperties": {
-					"driverMemory": "28g",
-					"driverCores": 4,
-					"executorMemory": "28g",
-					"executorCores": 4,
-					"numExecutors": 2,
-					"conf": {
-						"spark.dynamicAllocation.enabled": "false",
-						"spark.dynamicAllocation.minExecutors": "2",
-						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "ce9c6b38-94fa-4280-9312-93bd3c890e3d"
-					}
-				},
-				"metadata": {
-					"saveOutput": true,
-					"enableDebugMode": false,
-					"kernelspec": {
-						"name": "synapse_pyspark",
-						"display_name": "python"
-					},
-					"language_info": {
-						"name": "python"
-					},
-					"sessionKeepAliveTimeout": 30
-				},
-				"cells": [
-					{
-						"cell_type": "code",
-						"source": [
-							""
-						],
-						"outputs": [],
-						"execution_count": null
-					}
-				]
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/nb_agent_silver')]",
-			"type": "Microsoft.Synapse/workspaces/notebooks",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"folder": {
-					"name": "agent"
-				},
-				"nbformat": 4,
-				"nbformat_minor": 2,
-				"sessionProperties": {
-					"driverMemory": "28g",
-					"driverCores": 4,
-					"executorMemory": "28g",
-					"executorCores": 4,
-					"numExecutors": 2,
-					"conf": {
-						"spark.dynamicAllocation.enabled": "false",
-						"spark.dynamicAllocation.minExecutors": "2",
-						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "e00f0977-304c-4665-961f-f658d244be3d"
-					}
-				},
-				"metadata": {
-					"saveOutput": true,
-					"enableDebugMode": false,
-					"kernelspec": {
-						"name": "synapse_pyspark",
-						"display_name": "python"
-					},
-					"language_info": {
-						"name": "python"
-					},
-					"sessionKeepAliveTimeout": 30
-				},
-				"cells": [
-					{
-						"cell_type": "code",
-						"source": [
-							""
-						],
-						"outputs": [],
-						"execution_count": null
-					}
-				]
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/nb_claim_bronze')]",
-			"type": "Microsoft.Synapse/workspaces/notebooks",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"folder": {
-					"name": "claim"
-				},
-				"nbformat": 4,
-				"nbformat_minor": 2,
-				"sessionProperties": {
-					"driverMemory": "28g",
-					"driverCores": 4,
-					"executorMemory": "28g",
-					"executorCores": 4,
-					"numExecutors": 2,
-					"conf": {
-						"spark.dynamicAllocation.enabled": "false",
-						"spark.dynamicAllocation.minExecutors": "2",
-						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "bac43560-c996-40c2-abe6-5226abc10b93"
-					}
-				},
-				"metadata": {
-					"saveOutput": true,
-					"enableDebugMode": false,
-					"kernelspec": {
-						"name": "synapse_pyspark",
-						"display_name": "python"
-					},
-					"language_info": {
-						"name": "python"
-					},
-					"sessionKeepAliveTimeout": 30
-				},
-				"cells": [
-					{
-						"cell_type": "code",
-						"source": [
-							""
-						],
-						"outputs": [],
-						"execution_count": null
-					}
-				]
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/nb_claim_gold')]",
-			"type": "Microsoft.Synapse/workspaces/notebooks",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"folder": {
-					"name": "claim"
-				},
-				"nbformat": 4,
-				"nbformat_minor": 2,
-				"sessionProperties": {
-					"driverMemory": "28g",
-					"driverCores": 4,
-					"executorMemory": "28g",
-					"executorCores": 4,
-					"numExecutors": 2,
-					"conf": {
-						"spark.dynamicAllocation.enabled": "false",
-						"spark.dynamicAllocation.minExecutors": "2",
-						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "0b1cd13c-227a-4abb-b031-28860bee1206"
-					}
-				},
-				"metadata": {
-					"saveOutput": true,
-					"enableDebugMode": false,
-					"kernelspec": {
-						"name": "synapse_pyspark",
-						"display_name": "python"
-					},
-					"language_info": {
-						"name": "python"
-					},
-					"sessionKeepAliveTimeout": 30
-				},
-				"cells": [
-					{
-						"cell_type": "code",
-						"source": [
-							""
-						],
-						"outputs": [],
-						"execution_count": null
-					}
-				]
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/nb_claim_silver')]",
-			"type": "Microsoft.Synapse/workspaces/notebooks",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"folder": {
-					"name": "claim"
-				},
-				"nbformat": 4,
-				"nbformat_minor": 2,
-				"sessionProperties": {
-					"driverMemory": "28g",
-					"driverCores": 4,
-					"executorMemory": "28g",
-					"executorCores": 4,
-					"numExecutors": 2,
-					"conf": {
-						"spark.dynamicAllocation.enabled": "false",
-						"spark.dynamicAllocation.minExecutors": "2",
-						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "37db4b3a-4420-4eea-bd23-8c2de1ff78c2"
-					}
-				},
-				"metadata": {
-					"saveOutput": true,
-					"enableDebugMode": false,
-					"kernelspec": {
-						"name": "synapse_pyspark",
-						"display_name": "python"
-					},
-					"language_info": {
-						"name": "python"
-					},
-					"sessionKeepAliveTimeout": 30
-				},
-				"cells": [
-					{
-						"cell_type": "code",
-						"source": [
-							""
-						],
-						"outputs": [],
-						"execution_count": null
-					}
-				]
 			},
 			"dependsOn": []
 		},
@@ -2063,7 +1786,7 @@
 						"spark.dynamicAllocation.enabled": "true",
 						"spark.dynamicAllocation.minExecutors": "1",
 						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "7aa74df7-95d2-4a20-85be-bd65bf7d09c4"
+						"spark.autotune.trackingId": "7c9bf006-e772-44a9-bc1b-996a9db5ce3d"
 					}
 				},
 				"metadata": {
@@ -2100,13 +1823,13 @@
 							"collapsed": false
 						},
 						"source": [
-							"bronze_df = spark.read.format(\"parquet\").load(\"abfss://synapse@saibdpdev.dfs.core.windows.net/bronze/customer/\")\n",
+							"bronze_df = spark.read.format(\"parquet\").load(\"abfss://synapse@saibdpdev.dfs.core.windows.net/reject/customer/\")\n",
 							"display(bronze_df.count())\n",
 							"\n",
 							"display(bronze_df)"
 						],
 						"outputs": [],
-						"execution_count": null
+						"execution_count": 11
 					},
 					{
 						"cell_type": "code",
@@ -2235,17 +1958,21 @@
 				},
 				"nbformat": 4,
 				"nbformat_minor": 2,
+				"bigDataPool": {
+					"referenceName": "sparksmall",
+					"type": "BigDataPoolReference"
+				},
 				"sessionProperties": {
 					"driverMemory": "28g",
 					"driverCores": 4,
 					"executorMemory": "28g",
 					"executorCores": 4,
-					"numExecutors": 2,
+					"numExecutors": 1,
 					"conf": {
-						"spark.dynamicAllocation.enabled": "false",
-						"spark.dynamicAllocation.minExecutors": "2",
+						"spark.dynamicAllocation.enabled": "true",
+						"spark.dynamicAllocation.minExecutors": "1",
 						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "66832c75-d042-4a05-a15a-b26f0ed23d8d"
+						"spark.autotune.trackingId": "b5cde404-1227-4220-b13b-708470d67b89"
 					}
 				},
 				"metadata": {
@@ -2253,21 +1980,130 @@
 					"enableDebugMode": false,
 					"kernelspec": {
 						"name": "synapse_pyspark",
-						"display_name": "python"
+						"display_name": "Synapse PySpark"
 					},
 					"language_info": {
 						"name": "python"
+					},
+					"a365ComputeOptions": {
+						"id": "/subscriptions/c2cd82ac-1b67-4f57-ae79-64d3e1739263/resourceGroups/rg-ibdp-dev/providers/Microsoft.Synapse/workspaces/insurance-batch-data-processing/bigDataPools/sparksmall",
+						"name": "sparksmall",
+						"type": "Spark",
+						"endpoint": "https://insurance-batch-data-processing.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/sparksmall",
+						"auth": {
+							"type": "AAD",
+							"authResource": "https://dev.azuresynapse.net"
+						},
+						"sparkVersion": "3.5",
+						"nodeCount": 10,
+						"cores": 4,
+						"memory": 28,
+						"automaticScaleJobs": true
 					},
 					"sessionKeepAliveTimeout": 30
 				},
 				"cells": [
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
-							""
+							"# ==========================================================\n",
+							"# Customer Silver Notebook\n",
+							"# Layer : Silver\n",
+							"# Purpose : Incremental Processing using Delta Lake MERGE\n",
+							"# =========================================================="
+						],
+						"outputs": [],
+						"execution_count": 8
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"from pyspark.sql.functions import *\n",
+							"from pyspark.sql.types import *\n",
+							"from delta.tables import DeltaTable\n",
+							"from pyspark.sql.window import Window"
 						],
 						"outputs": [],
 						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"# ==========================================================\n",
+							"# keyvault Connection Configuration\n",
+							"# ==========================================================\n",
+							"\n",
+							"\n",
+							"from notebookutils import mssparkutils\n",
+							"\n",
+							"sql_username = mssparkutils.credentials.getSecret(\n",
+							"    \"kv-ibdp-dev\",\n",
+							"    \"sql-ibdp-project\",\n",
+							"    \"ls_keyvault\"\n",
+							")\n",
+							"\n",
+							"sql_password = mssparkutils.credentials.getSecret(\n",
+							"    \"kv-ibdp-dev\",\n",
+							"    \"sql-ibdp-password\",\n",
+							"    \"ls_keyvault\"\n",
+							")"
+						],
+						"outputs": [],
+						"execution_count": 12
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"# ==========================================================\n",
+							"# JDBC Connection Configuration\n",
+							"# ==========================================================\n",
+							"\n",
+							"sql_server = \"sql-ibdp-dev.database.windows.net.database.windows.net\"\n",
+							"database_name = \"control-db\"\n",
+							"\n",
+							"jdbc_url = (\n",
+							"    f\"jdbc:sqlserver://{sql_server}:1433;\"\n",
+							"    f\"database={database_name};\"\n",
+							"    \"encrypt=true;\"\n",
+							"    \"trustServerCertificate=false;\"\n",
+							"    \"hostNameInCertificate=*.database.windows.net;\"\n",
+							"    \"loginTimeout=30;\"\n",
+							")\n",
+							"\n",
+							"jdbc_properties = {\n",
+							"    \"user\": \"<username>\",\n",
+							"    \"password\": \"<password>\",\n",
+							"    \"driver\": \"com.microsoft.sqlserver.jdbc.SQLServerDriver\"\n",
+							"}"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"collapsed": false
+						},
+						"source": [
+							"storage_account = \"saibdpdev\"\n",
+							"container_name = \"synapse\"\n",
+							"\n",
+							"bronze_path = f\"abfss://{container_name}@{storage_account}.dfs.core.windows.net/bronze/customer/\"\n",
+							"silver_path = f\"abfss://{container_name}@{storage_account}.dfs.core.windows.net/silver/customer/\"\n",
+							"\n",
+							"df_bronze = spark.read.format(\"parquet\").load(bronze_path)\n",
+							"bronze_record_count = df_bronze.count()\n",
+							"print(f\"Records Read: {bronze_record_count}\")\n",
+							"display(df_bronze)\n",
+							"\n",
+							""
+						],
+						"outputs": [],
+						"execution_count": 10
 					}
 				]
 			},
@@ -2905,294 +2741,6 @@
 			"dependsOn": []
 		},
 		{
-			"name": "[concat(parameters('workspaceName'), '/nb_payment_bronze')]",
-			"type": "Microsoft.Synapse/workspaces/notebooks",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"folder": {
-					"name": "payment"
-				},
-				"nbformat": 4,
-				"nbformat_minor": 2,
-				"sessionProperties": {
-					"driverMemory": "28g",
-					"driverCores": 4,
-					"executorMemory": "28g",
-					"executorCores": 4,
-					"numExecutors": 2,
-					"conf": {
-						"spark.dynamicAllocation.enabled": "false",
-						"spark.dynamicAllocation.minExecutors": "2",
-						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "da8aa211-903b-40bc-9833-cf0720aaa327"
-					}
-				},
-				"metadata": {
-					"saveOutput": true,
-					"enableDebugMode": false,
-					"kernelspec": {
-						"name": "synapse_pyspark",
-						"display_name": "python"
-					},
-					"language_info": {
-						"name": "python"
-					},
-					"sessionKeepAliveTimeout": 30
-				},
-				"cells": [
-					{
-						"cell_type": "code",
-						"source": [
-							""
-						],
-						"outputs": [],
-						"execution_count": null
-					}
-				]
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/nb_payment_gold')]",
-			"type": "Microsoft.Synapse/workspaces/notebooks",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"folder": {
-					"name": "payment"
-				},
-				"nbformat": 4,
-				"nbformat_minor": 2,
-				"sessionProperties": {
-					"driverMemory": "28g",
-					"driverCores": 4,
-					"executorMemory": "28g",
-					"executorCores": 4,
-					"numExecutors": 2,
-					"conf": {
-						"spark.dynamicAllocation.enabled": "false",
-						"spark.dynamicAllocation.minExecutors": "2",
-						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "d9c50fbb-9137-43a9-b198-5d26aff1ce9c"
-					}
-				},
-				"metadata": {
-					"saveOutput": true,
-					"enableDebugMode": false,
-					"kernelspec": {
-						"name": "synapse_pyspark",
-						"display_name": "python"
-					},
-					"language_info": {
-						"name": "python"
-					},
-					"sessionKeepAliveTimeout": 30
-				},
-				"cells": [
-					{
-						"cell_type": "code",
-						"source": [
-							""
-						],
-						"outputs": [],
-						"execution_count": null
-					}
-				]
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/nb_payment_silver')]",
-			"type": "Microsoft.Synapse/workspaces/notebooks",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"folder": {
-					"name": "payment"
-				},
-				"nbformat": 4,
-				"nbformat_minor": 2,
-				"sessionProperties": {
-					"driverMemory": "28g",
-					"driverCores": 4,
-					"executorMemory": "28g",
-					"executorCores": 4,
-					"numExecutors": 2,
-					"conf": {
-						"spark.dynamicAllocation.enabled": "false",
-						"spark.dynamicAllocation.minExecutors": "2",
-						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "481a0857-6f8e-4ac5-b978-da71c6a3d64a"
-					}
-				},
-				"metadata": {
-					"saveOutput": true,
-					"enableDebugMode": false,
-					"kernelspec": {
-						"name": "synapse_pyspark",
-						"display_name": "python"
-					},
-					"language_info": {
-						"name": "python"
-					},
-					"sessionKeepAliveTimeout": 30
-				},
-				"cells": [
-					{
-						"cell_type": "code",
-						"source": [
-							""
-						],
-						"outputs": [],
-						"execution_count": null
-					}
-				]
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/nb_policy_bronze')]",
-			"type": "Microsoft.Synapse/workspaces/notebooks",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"folder": {
-					"name": "policy"
-				},
-				"nbformat": 4,
-				"nbformat_minor": 2,
-				"sessionProperties": {
-					"driverMemory": "28g",
-					"driverCores": 4,
-					"executorMemory": "28g",
-					"executorCores": 4,
-					"numExecutors": 2,
-					"conf": {
-						"spark.dynamicAllocation.enabled": "false",
-						"spark.dynamicAllocation.minExecutors": "2",
-						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "0f082788-5975-4df5-a21d-b0b42bcca721"
-					}
-				},
-				"metadata": {
-					"saveOutput": true,
-					"enableDebugMode": false,
-					"kernelspec": {
-						"name": "synapse_pyspark",
-						"display_name": "python"
-					},
-					"language_info": {
-						"name": "python"
-					},
-					"sessionKeepAliveTimeout": 30
-				},
-				"cells": [
-					{
-						"cell_type": "code",
-						"source": [
-							""
-						],
-						"outputs": [],
-						"execution_count": null
-					}
-				]
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/nb_policy_gold')]",
-			"type": "Microsoft.Synapse/workspaces/notebooks",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"folder": {
-					"name": "policy"
-				},
-				"nbformat": 4,
-				"nbformat_minor": 2,
-				"sessionProperties": {
-					"driverMemory": "28g",
-					"driverCores": 4,
-					"executorMemory": "28g",
-					"executorCores": 4,
-					"numExecutors": 2,
-					"conf": {
-						"spark.dynamicAllocation.enabled": "false",
-						"spark.dynamicAllocation.minExecutors": "2",
-						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "5df2d30c-281f-41ac-b61b-f3137de7eb89"
-					}
-				},
-				"metadata": {
-					"saveOutput": true,
-					"enableDebugMode": false,
-					"kernelspec": {
-						"name": "synapse_pyspark",
-						"display_name": "python"
-					},
-					"language_info": {
-						"name": "python"
-					},
-					"sessionKeepAliveTimeout": 30
-				},
-				"cells": [
-					{
-						"cell_type": "code",
-						"source": [
-							""
-						],
-						"outputs": [],
-						"execution_count": null
-					}
-				]
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/nb_policy_silver')]",
-			"type": "Microsoft.Synapse/workspaces/notebooks",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"folder": {
-					"name": "policy"
-				},
-				"nbformat": 4,
-				"nbformat_minor": 2,
-				"sessionProperties": {
-					"driverMemory": "28g",
-					"driverCores": 4,
-					"executorMemory": "28g",
-					"executorCores": 4,
-					"numExecutors": 2,
-					"conf": {
-						"spark.dynamicAllocation.enabled": "false",
-						"spark.dynamicAllocation.minExecutors": "2",
-						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "8f508939-10ef-42a2-87e2-f4c5a4e6da2d"
-					}
-				},
-				"metadata": {
-					"saveOutput": true,
-					"enableDebugMode": false,
-					"kernelspec": {
-						"name": "synapse_pyspark",
-						"display_name": "python"
-					},
-					"language_info": {
-						"name": "python"
-					},
-					"sessionKeepAliveTimeout": 30
-				},
-				"cells": [
-					{
-						"cell_type": "code",
-						"source": [
-							""
-						],
-						"outputs": [],
-						"execution_count": null
-					}
-				]
-			},
-			"dependsOn": []
-		},
-		{
 			"name": "[concat(parameters('workspaceName'), '/nb_utilities')]",
 			"type": "Microsoft.Synapse/workspaces/notebooks",
 			"apiVersion": "2019-06-01-preview",
@@ -3264,6 +2812,19 @@
 			},
 			"dependsOn": [],
 			"location": "westus2"
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/ls_keyvault')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"annotations": [],
+				"type": "AzureKeyVault",
+				"typeProperties": {
+					"baseUrl": "[parameters('ls_keyvault_properties_typeProperties_baseUrl')]"
+				}
+			},
+			"dependsOn": []
 		}
 	]
 }
