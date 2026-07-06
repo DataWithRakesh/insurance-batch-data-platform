@@ -20,7 +20,7 @@
 				"spark.dynamicAllocation.enabled": "true",
 				"spark.dynamicAllocation.minExecutors": "1",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "7c96b6a7-c40b-4a8b-ba15-e23d23fa577d"
+				"spark.autotune.trackingId": "419ffe93-ba55-4eea-92e5-ae4a67e56826"
 			}
 		},
 		"metadata": {
@@ -45,7 +45,8 @@
 				"sparkVersion": "3.5",
 				"nodeCount": 10,
 				"cores": 4,
-				"memory": 28
+				"memory": 28,
+				"automaticScaleJobs": true
 			},
 			"sessionKeepAliveTimeout": 30
 		},
@@ -59,7 +60,7 @@
 					"# Purpose : Incremental Processing using Delta Lake MERGE\n",
 					"# =========================================================="
 				],
-				"execution_count": 8
+				"execution_count": 31
 			},
 			{
 				"cell_type": "code",
@@ -69,7 +70,7 @@
 					"from delta.tables import DeltaTable\n",
 					"from pyspark.sql.window import Window"
 				],
-				"execution_count": null
+				"execution_count": 32
 			},
 			{
 				"cell_type": "code",
@@ -93,7 +94,7 @@
 					"    \"ls_keyvault\"\n",
 					")"
 				],
-				"execution_count": 18
+				"execution_count": 33
 			},
 			{
 				"cell_type": "code",
@@ -120,7 +121,7 @@
 					"    \"driver\": \"com.microsoft.sqlserver.jdbc.SQLServerDriver\"\n",
 					"}"
 				],
-				"execution_count": 24
+				"execution_count": 34
 			},
 			{
 				"cell_type": "code",
@@ -146,9 +147,70 @@
 			{
 				"cell_type": "code",
 				"source": [
-					""
+					"# ==========================================================\n",
+					"# Current Schema Validation\n",
+					"# ==========================================================\n",
+					"current_schema_json = bronze_df.schema.json()\n",
+					"print(\"Current Schema:\")\n",
+					"print(current_schema_json)"
+				],
+				"execution_count": 38
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"collapsed": false
+				},
+				"source": [
+					"# ==========================================================\n",
+					"# Read Previous Schema\n",
+					"# ==========================================================\n",
+					"\n",
+					"schema_history_df = spark.read.jdbc(\n",
+					"    url=jdbc_url,\n",
+					"    table=\"\"\"\n",
+					"    (\n",
+					"        SELECT TOP 1 *\n",
+					"        FROM dbo.schema_history\n",
+					"        WHERE source_name='customer'\n",
+					"        ORDER BY detected_on DESC\n",
+					"    ) sh\n",
+					"    \"\"\",\n",
+					"    properties=jdbc_properties\n",
+					")\n",
+					"\n",
+					"display(schema_history_df)"
 				],
 				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"# ==========================================================\n",
+					"# Step 5 - Compare Schema\n",
+					"# ==========================================================\n",
+					"\n",
+					"if schema_history_df.count() == 0:\n",
+					"    print(f\"First Run : No previous schema found\")\n",
+					"    schema_changed = True\n",
+					"    schema_version =1\n",
+					"else:\n",
+					"    previous_schema_json = schema_history_df.first()[\"schema_json\"]\n",
+					"\n",
+					"    if current_schema_json == previous_schema_json:\n",
+					"        print(\"No schema change found\")\n",
+					"        schema_changed = False\n",
+					"        schema_version = schema_history_df.first()[\"schema_version\"]\n",
+					"    else:\n",
+					"        print(\"Schema change detected !!!\")\n",
+					"        schema_changed = True\n",
+					"        schema_version = schema_history_df.first()[\"schema_version\"] + 1\n",
+					"\n",
+					"print(f\"Schema Changed : {schema_changed}\")\n",
+					"print(f\"Schema Version : {schema_version}\")\n",
+					""
+				],
+				"execution_count": 43
 			},
 			{
 				"cell_type": "code",
