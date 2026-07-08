@@ -1,5 +1,5 @@
 {
-	"name": "nb_common_functions",
+	"name": "nb_common_config",
 	"properties": {
 		"folder": {
 			"name": "common"
@@ -20,7 +20,7 @@
 				"spark.dynamicAllocation.enabled": "true",
 				"spark.dynamicAllocation.minExecutors": "1",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "c84d4024-e6fd-401d-af4a-ee0408c3e6e5"
+				"spark.autotune.trackingId": "887cca39-df6c-469d-8e7e-ee61eff3c2c3"
 			}
 		},
 		"metadata": {

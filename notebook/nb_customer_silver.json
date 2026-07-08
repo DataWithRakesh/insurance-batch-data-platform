@@ -20,7 +20,7 @@
 				"spark.dynamicAllocation.enabled": "true",
 				"spark.dynamicAllocation.minExecutors": "1",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "419ffe93-ba55-4eea-92e5-ae4a67e56826"
+				"spark.autotune.trackingId": "02433630-60dd-4583-a491-14a63409322a"
 			}
 		},
 		"metadata": {
@@ -60,7 +60,7 @@
 					"# Purpose : Incremental Processing using Delta Lake MERGE\n",
 					"# =========================================================="
 				],
-				"execution_count": 31
+				"execution_count": 1
 			},
 			{
 				"cell_type": "code",
@@ -70,7 +70,7 @@
 					"from delta.tables import DeltaTable\n",
 					"from pyspark.sql.window import Window"
 				],
-				"execution_count": 32
+				"execution_count": 2
 			},
 			{
 				"cell_type": "code",
@@ -94,7 +94,7 @@
 					"    \"ls_keyvault\"\n",
 					")"
 				],
-				"execution_count": 33
+				"execution_count": 3
 			},
 			{
 				"cell_type": "code",
@@ -121,7 +121,7 @@
 					"    \"driver\": \"com.microsoft.sqlserver.jdbc.SQLServerDriver\"\n",
 					"}"
 				],
-				"execution_count": 34
+				"execution_count": 5
 			},
 			{
 				"cell_type": "code",
@@ -147,6 +147,18 @@
 			{
 				"cell_type": "code",
 				"source": [
+					"from pyspark.sql.functions import col, to_timestamp\n",
+					"\n",
+					"bronze_df = bronze_df.withColumn(\n",
+					"    \"last_updated_ts\",\n",
+					"    to_timestamp(col(\"last_updated_ts\"), \"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'\")\n",
+					")"
+				],
+				"execution_count": 17
+			},
+			{
+				"cell_type": "code",
+				"source": [
 					"# ==========================================================\n",
 					"# Current Schema Validation\n",
 					"# ==========================================================\n",
@@ -154,7 +166,7 @@
 					"print(\"Current Schema:\")\n",
 					"print(current_schema_json)"
 				],
-				"execution_count": 38
+				"execution_count": null
 			},
 			{
 				"cell_type": "code",
@@ -181,13 +193,13 @@
 					"\n",
 					"display(schema_history_df)"
 				],
-				"execution_count": null
+				"execution_count": 7
 			},
 			{
 				"cell_type": "code",
 				"source": [
 					"# ==========================================================\n",
-					"# Step 5 - Compare Schema\n",
+					"# Compare Schema\n",
 					"# ==========================================================\n",
 					"\n",
 					"if schema_history_df.count() == 0:\n",
@@ -210,7 +222,49 @@
 					"print(f\"Schema Version : {schema_version}\")\n",
 					""
 				],
-				"execution_count": 43
+				"execution_count": 8
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"# ==========================================================\n",
+					"# Insert Schema History\n",
+					"# ==========================================================\n",
+					"\n",
+					"if schema_changed:\n",
+					"    schema_insert_df = spark.createDataFrame(\n",
+					"\n",
+					"        [\n",
+					"            (\n",
+					"                \"customer\",\n",
+					"                schema_version,\n",
+					"                current_schema_json,\n",
+					"                \"NEW SCHEMA\",\n",
+					"                \"ACTIVE\"\n",
+					"            )\n",
+					"        ],  [\n",
+					"            \"source_name\",\n",
+					"            \"schema_version\",\n",
+					"            \"schema_json\",\n",
+					"            \"change_type\",\n",
+					"            \"status\"\n",
+					"        ]\n",
+					"    )\n",
+					"\n",
+					"\n",
+					"    schema_insert_df.write\\\n",
+					"            .mode(\"append\")\\\n",
+					"            .jdbc(\n",
+					"                url=jdbc_url,\n",
+					"                table = \"dbo.schema_history\",\n",
+					"                properties = jdbc_properties\n",
+					"            )\n",
+					"    print(\"Schema insert successfully\")\n",
+					"\n",
+					"else:\n",
+					"    print(\"No schema change detected\")"
+				],
+				"execution_count": 12
 			},
 			{
 				"cell_type": "code",
@@ -246,10 +300,13 @@
 					"\n",
 					"print(f\"Last watermark value is : {last_watermark_value}\")"
 				],
-				"execution_count": 28
+				"execution_count": 14
 			},
 			{
 				"cell_type": "code",
+				"metadata": {
+					"collapsed": false
+				},
 				"source": [
 					"# ==========================================================\n",
 					"# Incremental Filter (CDC)\n",
@@ -262,13 +319,76 @@
 					"else:\n",
 					"    # First run - process everything\n",
 					"    print(\"This is first run... Processing everything...\")\n",
-					"    df_incremental = df_bronze\n",
+					"    df_incremental = bronze_df\n",
 					"\n",
 					"incremental_record_count = df_incremental.count()\n",
 					"print(f\"Incremental records count : {incremental_record_count}\")\n",
-					"display(incremental_record_count)"
+					"display(df_incremental)"
 				],
 				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"# ==========================================================\n",
+					"# Check if Silver Delta Table Exists\n",
+					"# ==========================================================\n",
+					"\n",
+					"from delta.tables import DeltaTable\n",
+					"\n",
+					"try:\n",
+					"    delta_silver = DeltaTable.forPath(spark,silver_path)\n",
+					"    silver_exists = True\n",
+					"    print(\"Silver Delta Table Exists\")\n",
+					"except:\n",
+					"    silver_exists = False\n",
+					"    print(\"Silver Delta Table Does Not Exist\")"
+				],
+				"execution_count": 24
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"# ==========================================================\n",
+					"# First Time Silver Load\n",
+					"# ==========================================================\n",
+					"\n",
+					"if not silver_exists:\n",
+					"\n",
+					"    print(\"First Run - Creating silver delta table...\")\n",
+					"\n",
+					"    df_incremental.write \\\n",
+					"        .format(\"delta\")\\\n",
+					"        .mode(\"overwrite\") \\\n",
+					"        .save(silver_path)\n",
+					"\n",
+					"    print(f\"Silver Table Created Successfully with {incremental_record_count} records.\")\n",
+					"else:\n",
+					"    print(\"Silver delta table exists... Performing Delta Merge\")\n",
+					"    delta_silver.alias(\"target\")\\\n",
+					"        .merge(df_incremental.alias(\"source\"),\n",
+					"        \"target.customer_id\" = \"source.customer_id\"\n",
+					"        )\\\n",
+					"        .whenMatchedUpdateAll() \\\n",
+					"        .whenNotMatchedInsertAll()\\\n",
+					"        .execute()\n",
+					"    print(\"Delta MERGE completed successfully..\")"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"# ==========================================================\n",
+					"# Get Latest Watermark\n",
+					"# ==========================================================\n",
+					"\n",
+					"from pyspark.sql.functions import max\n",
+					"new_watermark = df_incremental.agg(max(\"last_updated_ts\").alias(\"last_watermark_value\")).collect()[0][\"last_watermark_value\"]\n",
+					"\n",
+					"print(f\"New watermark : {new_watermark}\")"
+				],
+				"execution_count": 29
 			}
 		]
 	}
