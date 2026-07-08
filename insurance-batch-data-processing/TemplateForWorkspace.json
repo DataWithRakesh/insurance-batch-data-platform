@@ -33,6 +33,10 @@
 			"type": "string",
 			"defaultValue": "https://rakeshsynapseadlsgen2.dfs.core.windows.net"
 		},
+		"ls_keyvault_properties_typeProperties_baseUrl": {
+			"type": "string",
+			"defaultValue": "https://kv-ibdp-dev.vault.azure.net/"
+		},
 		"ls_saibdpdev_properties_typeProperties_url": {
 			"type": "string",
 			"defaultValue": "https://saibdpdev.dfs.core.windows.net/"
@@ -48,10 +52,6 @@
 		"ls_slq_server_properties_typeProperties_userName": {
 			"type": "string",
 			"defaultValue": "sqladmin"
-		},
-		"ls_keyvault_properties_typeProperties_baseUrl": {
-			"type": "string",
-			"defaultValue": "https://kv-ibdp-dev.vault.azure.net/"
 		}
 	},
 	"variables": {
@@ -849,14 +849,13 @@
 					}
 				},
 				"folder": {
-					"name": "customer"
+					"name": "pipelines/bronze/customer"
 				},
 				"annotations": []
 			},
 			"dependsOn": [
 				"[concat(variables('workspaceId'), '/datasets/ds_sql_metadata')]",
 				"[concat(variables('workspaceId'), '/dataflows/df_customer_bronze')]",
-				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]",
 				"[concat(variables('workspaceId'), '/datasets/ds_customer_landing')]",
 				"[concat(variables('workspaceId'), '/linkedServices/ls_slq_server')]",
 				"[concat(variables('workspaceId'), '/datasets/ds_customer_file_binary')]",
@@ -1392,6 +1391,19 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('workspaceName'), '/ls_keyvault')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"annotations": [],
+				"type": "AzureKeyVault",
+				"typeProperties": {
+					"baseUrl": "[parameters('ls_keyvault_properties_typeProperties_baseUrl')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
 			"name": "[concat(parameters('workspaceName'), '/ls_saibdpdev')]",
 			"type": "Microsoft.Synapse/workspaces/linkedServices",
 			"apiVersion": "2019-06-01-preview",
@@ -1577,7 +1589,7 @@
 			"dependsOn": []
 		},
 		{
-			"name": "[concat(parameters('workspaceName'), '/nb_common_functions')]",
+			"name": "[concat(parameters('workspaceName'), '/nb_common_config')]",
 			"type": "Microsoft.Synapse/workspaces/notebooks",
 			"apiVersion": "2019-06-01-preview",
 			"properties": {
@@ -1600,193 +1612,7 @@
 						"spark.dynamicAllocation.enabled": "true",
 						"spark.dynamicAllocation.minExecutors": "1",
 						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "c84d4024-e6fd-401d-af4a-ee0408c3e6e5"
-					}
-				},
-				"metadata": {
-					"saveOutput": true,
-					"enableDebugMode": false,
-					"kernelspec": {
-						"name": "synapse_pyspark",
-						"display_name": "Synapse PySpark"
-					},
-					"language_info": {
-						"name": "python"
-					},
-					"a365ComputeOptions": {
-						"id": "/subscriptions/c2cd82ac-1b67-4f57-ae79-64d3e1739263/resourceGroups/rg-ibdp-dev/providers/Microsoft.Synapse/workspaces/insurance-batch-data-processing/bigDataPools/sparksmall",
-						"name": "sparksmall",
-						"type": "Spark",
-						"endpoint": "https://insurance-batch-data-processing.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/sparksmall",
-						"auth": {
-							"type": "AAD",
-							"authResource": "https://dev.azuresynapse.net"
-						},
-						"sparkVersion": "3.5",
-						"nodeCount": 10,
-						"cores": 4,
-						"memory": 28
-					},
-					"sessionKeepAliveTimeout": 30
-				},
-				"cells": [
-					{
-						"cell_type": "code",
-						"source": [
-							"from pyspark.sql import SparkSession\n",
-							"from pyspark.sql import functions as F"
-						],
-						"outputs": [],
-						"execution_count": 33
-					},
-					{
-						"cell_type": "code",
-						"source": [
-							"spark = SparkSession.builder.getOrCreate()\n",
-							"\n",
-							"jdbc_url=\"jdbc:sqlserver://sql-ibdp-dev.database.windows.net:1433;database=control-db\"\n",
-							"\n",
-							"connection_properties ={\n",
-							"    \"user\":\"sqladmin\",\n",
-							"    \"password\":\"Magic@21\",\n",
-							"    \"driver\":\"com.microsoft.sqlserver.jdbc.SQLServerDriver\"\n",
-							"}"
-						],
-						"outputs": [],
-						"execution_count": 34
-					},
-					{
-						"cell_type": "code",
-						"source": [
-							"metadata_df = (\n",
-							"    spark.read.jdbc(url=jdbc_url,\n",
-							"                    table=\"metadata\",\n",
-							"                    properties =connection_properties\n",
-							"                    )\n",
-							")\n",
-							"\n",
-							"metadata_df.show(5,truncate=False)\n",
-							""
-						],
-						"outputs": [],
-						"execution_count": 35
-					},
-					{
-						"cell_type": "code",
-						"metadata": {
-							"collapsed": false
-						},
-						"source": [
-							"def get_metadata(source_name):\n",
-							"    return (\n",
-							"        metadata_df\n",
-							"        .filter(F.col(\"source_name\")==source_name)\n",
-							"        .first()\n",
-							"    )"
-						],
-						"outputs": [],
-						"execution_count": 37
-					},
-					{
-						"cell_type": "code",
-						"source": [
-							"def get_source_path(source_name):\n",
-							"    return(get_metadata(source_name).source_path)"
-						],
-						"outputs": [],
-						"execution_count": 38
-					},
-					{
-						"cell_type": "code",
-						"source": [
-							"def get_bronze_path(source_name):\n",
-							"    return(get_metadata(source_name).bronze_path)"
-						],
-						"outputs": [],
-						"execution_count": 39
-					},
-					{
-						"cell_type": "code",
-						"source": [
-							"def get_silver_path(source_name):\n",
-							"    return(\n",
-							"        get_metadata(source_name).silver_path\n",
-							"    )"
-						],
-						"outputs": [],
-						"execution_count": 40
-					},
-					{
-						"cell_type": "code",
-						"source": [
-							"def get_gold_path(source_name):\n",
-							"    return(\n",
-							"        get_metadata(source_name).gold_path\n",
-							"    )"
-						],
-						"outputs": [],
-						"execution_count": 41
-					},
-					{
-						"cell_type": "code",
-						"source": [
-							"def get_business_key(source_name):\n",
-							"    return(\n",
-							"        get_metadata(source_name).business_key\n",
-							"    )"
-						],
-						"outputs": [],
-						"execution_count": 42
-					},
-					{
-						"cell_type": "code",
-						"source": [
-							"def get_watermark_column(source_name):\n",
-							"    return get_metadata(source_name).watermark_column\n",
-							"\n",
-							""
-						],
-						"outputs": [],
-						"execution_count": 43
-					},
-					{
-						"cell_type": "code",
-						"source": [
-							"def get_file_format(source_name):\n",
-							"    return get_metadata(source_name).file_format"
-						],
-						"outputs": [],
-						"execution_count": 44
-					}
-				]
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/nb_customer_bronze')]",
-			"type": "Microsoft.Synapse/workspaces/notebooks",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"folder": {
-					"name": "customer"
-				},
-				"nbformat": 4,
-				"nbformat_minor": 2,
-				"bigDataPool": {
-					"referenceName": "sparksmall",
-					"type": "BigDataPoolReference"
-				},
-				"sessionProperties": {
-					"driverMemory": "28g",
-					"driverCores": 4,
-					"executorMemory": "28g",
-					"executorCores": 4,
-					"numExecutors": 1,
-					"conf": {
-						"spark.dynamicAllocation.enabled": "true",
-						"spark.dynamicAllocation.minExecutors": "1",
-						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "7c9bf006-e772-44a9-bc1b-996a9db5ce3d"
+						"spark.autotune.trackingId": "887cca39-df6c-469d-8e7e-ee61eff3c2c3"
 					}
 				},
 				"metadata": {
@@ -1819,6 +1645,202 @@
 				"cells": [
 					{
 						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"from pyspark.sql import SparkSession\n",
+							"from pyspark.sql import functions as F"
+						],
+						"outputs": [],
+						"execution_count": 33
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"spark = SparkSession.builder.getOrCreate()\n",
+							"\n",
+							"jdbc_url=\"jdbc:sqlserver://sql-ibdp-dev.database.windows.net:1433;database=control-db\"\n",
+							"\n",
+							"connection_properties ={\n",
+							"    \"user\":\"sqladmin\",\n",
+							"    \"password\":\"Magic@21\",\n",
+							"    \"driver\":\"com.microsoft.sqlserver.jdbc.SQLServerDriver\"\n",
+							"}"
+						],
+						"outputs": [],
+						"execution_count": 34
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"metadata_df = (\n",
+							"    spark.read.jdbc(url=jdbc_url,\n",
+							"                    table=\"metadata\",\n",
+							"                    properties =connection_properties\n",
+							"                    )\n",
+							")\n",
+							"\n",
+							"metadata_df.show(5,truncate=False)\n",
+							""
+						],
+						"outputs": [],
+						"execution_count": 35
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"collapsed": false
+						},
+						"source": [
+							"def get_metadata(source_name):\n",
+							"    return (\n",
+							"        metadata_df\n",
+							"        .filter(F.col(\"source_name\")==source_name)\n",
+							"        .first()\n",
+							"    )"
+						],
+						"outputs": [],
+						"execution_count": 37
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"def get_source_path(source_name):\n",
+							"    return(get_metadata(source_name).source_path)"
+						],
+						"outputs": [],
+						"execution_count": 38
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"def get_bronze_path(source_name):\n",
+							"    return(get_metadata(source_name).bronze_path)"
+						],
+						"outputs": [],
+						"execution_count": 39
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"def get_silver_path(source_name):\n",
+							"    return(\n",
+							"        get_metadata(source_name).silver_path\n",
+							"    )"
+						],
+						"outputs": [],
+						"execution_count": 40
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"def get_gold_path(source_name):\n",
+							"    return(\n",
+							"        get_metadata(source_name).gold_path\n",
+							"    )"
+						],
+						"outputs": [],
+						"execution_count": 41
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"def get_business_key(source_name):\n",
+							"    return(\n",
+							"        get_metadata(source_name).business_key\n",
+							"    )"
+						],
+						"outputs": [],
+						"execution_count": 42
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"def get_watermark_column(source_name):\n",
+							"    return get_metadata(source_name).watermark_column\n",
+							"\n",
+							""
+						],
+						"outputs": [],
+						"execution_count": 43
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"def get_file_format(source_name):\n",
+							"    return get_metadata(source_name).file_format"
+						],
+						"outputs": [],
+						"execution_count": 44
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/nb_customer_bronze')]",
+			"type": "Microsoft.Synapse/workspaces/notebooks",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "notebooks/bronze"
+				},
+				"nbformat": 4,
+				"nbformat_minor": 2,
+				"bigDataPool": {
+					"referenceName": "sparksmall",
+					"type": "BigDataPoolReference"
+				},
+				"sessionProperties": {
+					"driverMemory": "28g",
+					"driverCores": 4,
+					"executorMemory": "28g",
+					"executorCores": 4,
+					"numExecutors": 1,
+					"conf": {
+						"spark.dynamicAllocation.enabled": "true",
+						"spark.dynamicAllocation.minExecutors": "1",
+						"spark.dynamicAllocation.maxExecutors": "2",
+						"spark.autotune.trackingId": "0ecb8171-f933-4fbe-9084-9bac379a6d96"
+					}
+				},
+				"metadata": {
+					"saveOutput": true,
+					"enableDebugMode": false,
+					"kernelspec": {
+						"name": "synapse_pyspark",
+						"display_name": "Synapse PySpark"
+					},
+					"language_info": {
+						"name": "python"
+					},
+					"a365ComputeOptions": {
+						"id": "/subscriptions/c2cd82ac-1b67-4f57-ae79-64d3e1739263/resourceGroups/rg-ibdp-dev/providers/Microsoft.Synapse/workspaces/insurance-batch-data-processing/bigDataPools/sparksmall",
+						"name": "sparksmall",
+						"type": "Spark",
+						"endpoint": "https://insurance-batch-data-processing.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/sparksmall",
+						"auth": {
+							"type": "AAD",
+							"authResource": "https://dev.azuresynapse.net"
+						},
+						"sparkVersion": "3.5",
+						"nodeCount": 10,
+						"cores": 4,
+						"memory": 28
+					},
+					"sessionKeepAliveTimeout": 30
+				},
+				"cells": [
+					{
+						"cell_type": "code",
 						"metadata": {
 							"collapsed": false
 						},
@@ -1833,7 +1855,6 @@
 					},
 					{
 						"cell_type": "code",
-						"metadata": {},
 						"source": [
 							"from notebookutils import mssparkutils\n",
 							"from pyspark.sql.functions import current_timestamp, input_file_name"
@@ -1856,7 +1877,6 @@
 					},
 					{
 						"cell_type": "code",
-						"metadata": {},
 						"source": [
 							"df = (\n",
 							"    spark.read\n",
@@ -1872,7 +1892,6 @@
 					},
 					{
 						"cell_type": "code",
-						"metadata": {},
 						"source": [
 							"\n",
 							"bronze_df = (\n",
@@ -1886,7 +1905,6 @@
 					},
 					{
 						"cell_type": "code",
-						"metadata": {},
 						"source": [
 							"bronze_df.write \\\n",
 							"    .format(\"delta\") \\\n",
@@ -1906,7 +1924,7 @@
 			"apiVersion": "2019-06-01-preview",
 			"properties": {
 				"folder": {
-					"name": "customer"
+					"name": "notebooks/gold"
 				},
 				"nbformat": 4,
 				"nbformat_minor": 2,
@@ -1954,7 +1972,7 @@
 			"apiVersion": "2019-06-01-preview",
 			"properties": {
 				"folder": {
-					"name": "customer"
+					"name": "notebooks/silver"
 				},
 				"nbformat": 4,
 				"nbformat_minor": 2,
@@ -1972,7 +1990,7 @@
 						"spark.dynamicAllocation.enabled": "true",
 						"spark.dynamicAllocation.minExecutors": "1",
 						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "b5cde404-1227-4220-b13b-708470d67b89"
+						"spark.autotune.trackingId": "867936c3-6728-482e-be88-09443a204b5f"
 					}
 				},
 				"metadata": {
@@ -2014,7 +2032,7 @@
 							"# =========================================================="
 						],
 						"outputs": [],
-						"execution_count": 8
+						"execution_count": 31
 					},
 					{
 						"cell_type": "code",
@@ -2026,7 +2044,7 @@
 							"from pyspark.sql.window import Window"
 						],
 						"outputs": [],
-						"execution_count": null
+						"execution_count": 32
 					},
 					{
 						"cell_type": "code",
@@ -2041,7 +2059,7 @@
 							"\n",
 							"sql_username = mssparkutils.credentials.getSecret(\n",
 							"    \"kv-ibdp-dev\",\n",
-							"    \"sql-ibdp-project\",\n",
+							"    \"sql-ibdp-username\",\n",
 							"    \"ls_keyvault\"\n",
 							")\n",
 							"\n",
@@ -2052,7 +2070,7 @@
 							")"
 						],
 						"outputs": [],
-						"execution_count": 12
+						"execution_count": 33
 					},
 					{
 						"cell_type": "code",
@@ -2062,7 +2080,7 @@
 							"# JDBC Connection Configuration\n",
 							"# ==========================================================\n",
 							"\n",
-							"sql_server = \"sql-ibdp-dev.database.windows.net.database.windows.net\"\n",
+							"sql_server = \"sql-ibdp-dev.database.windows.net\"\n",
 							"database_name = \"control-db\"\n",
 							"\n",
 							"jdbc_url = (\n",
@@ -2075,13 +2093,13 @@
 							")\n",
 							"\n",
 							"jdbc_properties = {\n",
-							"    \"user\": \"<username>\",\n",
-							"    \"password\": \"<password>\",\n",
+							"    \"user\": sql_username,\n",
+							"    \"password\": sql_password,\n",
 							"    \"driver\": \"com.microsoft.sqlserver.jdbc.SQLServerDriver\"\n",
 							"}"
 						],
 						"outputs": [],
-						"execution_count": null
+						"execution_count": 34
 					},
 					{
 						"cell_type": "code",
@@ -2095,22 +2113,380 @@
 							"bronze_path = f\"abfss://{container_name}@{storage_account}.dfs.core.windows.net/bronze/customer/\"\n",
 							"silver_path = f\"abfss://{container_name}@{storage_account}.dfs.core.windows.net/silver/customer/\"\n",
 							"\n",
-							"df_bronze = spark.read.format(\"parquet\").load(bronze_path)\n",
-							"bronze_record_count = df_bronze.count()\n",
+							"bronze_df = spark.read.format(\"parquet\").load(bronze_path)\n",
+							"bronze_record_count = bronze_df.count()\n",
 							"print(f\"Records Read: {bronze_record_count}\")\n",
-							"display(df_bronze)\n",
+							"display(bronze_df)\n",
 							"\n",
 							""
 						],
 						"outputs": [],
-						"execution_count": 10
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"from pyspark.sql.functions import col, to_timestamp\n",
+							"\n",
+							"bronze_df = bronze_df.withColumn(\n",
+							"    \"last_updated_ts\",\n",
+							"    to_timestamp(col(\"last_updated_ts\"), \"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'\")\n",
+							")"
+						],
+						"outputs": [],
+						"execution_count": 17
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"# ==========================================================\n",
+							"# Current Schema Validation\n",
+							"# ==========================================================\n",
+							"current_schema_json = bronze_df.schema.json()\n",
+							"print(\"Current Schema:\")\n",
+							"print(current_schema_json)"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"collapsed": false
+						},
+						"source": [
+							"# ==========================================================\n",
+							"# Read Previous Schema\n",
+							"# ==========================================================\n",
+							"\n",
+							"schema_history_df = spark.read.jdbc(\n",
+							"    url=jdbc_url,\n",
+							"    table=\"\"\"\n",
+							"    (\n",
+							"        SELECT TOP 1 *\n",
+							"        FROM dbo.schema_history\n",
+							"        WHERE source_name='customer'\n",
+							"        ORDER BY detected_on DESC\n",
+							"    ) sh\n",
+							"    \"\"\",\n",
+							"    properties=jdbc_properties\n",
+							")\n",
+							"\n",
+							"display(schema_history_df)"
+						],
+						"outputs": [],
+						"execution_count": 7
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"# ==========================================================\n",
+							"# Compare Schema\n",
+							"# ==========================================================\n",
+							"\n",
+							"if schema_history_df.count() == 0:\n",
+							"    print(f\"First Run : No previous schema found\")\n",
+							"    schema_changed = True\n",
+							"    schema_version =1\n",
+							"else:\n",
+							"    previous_schema_json = schema_history_df.first()[\"schema_json\"]\n",
+							"\n",
+							"    if current_schema_json == previous_schema_json:\n",
+							"        print(\"No schema change found\")\n",
+							"        schema_changed = False\n",
+							"        schema_version = schema_history_df.first()[\"schema_version\"]\n",
+							"    else:\n",
+							"        print(\"Schema change detected !!!\")\n",
+							"        schema_changed = True\n",
+							"        schema_version = schema_history_df.first()[\"schema_version\"] + 1\n",
+							"\n",
+							"print(f\"Schema Changed : {schema_changed}\")\n",
+							"print(f\"Schema Version : {schema_version}\")\n",
+							""
+						],
+						"outputs": [],
+						"execution_count": 8
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"# ==========================================================\n",
+							"# Insert Schema History\n",
+							"# ==========================================================\n",
+							"\n",
+							"if schema_changed:\n",
+							"    schema_insert_df = spark.createDataFrame(\n",
+							"\n",
+							"        [\n",
+							"            (\n",
+							"                \"customer\",\n",
+							"                schema_version,\n",
+							"                current_schema_json,\n",
+							"                \"NEW SCHEMA\",\n",
+							"                \"ACTIVE\"\n",
+							"            )\n",
+							"        ],  [\n",
+							"            \"source_name\",\n",
+							"            \"schema_version\",\n",
+							"            \"schema_json\",\n",
+							"            \"change_type\",\n",
+							"            \"status\"\n",
+							"        ]\n",
+							"    )\n",
+							"\n",
+							"\n",
+							"    schema_insert_df.write\\\n",
+							"            .mode(\"append\")\\\n",
+							"            .jdbc(\n",
+							"                url=jdbc_url,\n",
+							"                table = \"dbo.schema_history\",\n",
+							"                properties = jdbc_properties\n",
+							"            )\n",
+							"    print(\"Schema insert successfully\")\n",
+							"\n",
+							"else:\n",
+							"    print(\"No schema change detected\")"
+						],
+						"outputs": [],
+						"execution_count": 12
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"collapsed": false
+						},
+						"source": [
+							"# ==========================================================\n",
+							"# Read Watermark\n",
+							"# ==========================================================\n",
+							"\n",
+							"watermark_df = spark.read.jdbc(\n",
+							"    url=jdbc_url,\n",
+							"    table=\"(SELECT * FROM dbo.watermark WHERE source_name='customer') wm\",\n",
+							"    properties=jdbc_properties\n",
+							")\n",
+							"\n",
+							"display(watermark_df)"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"# ==========================================================\n",
+							"# Read Last Watermark Value\n",
+							"# ==========================================================\n",
+							"\n",
+							"if watermark_df.count() >0:\n",
+							"    last_watermark_value = watermark_df.first()[\"last_watermark_value\"]\n",
+							"else:\n",
+							"    last_watermark_value = None\n",
+							"\n",
+							"print(f\"Last watermark value is : {last_watermark_value}\")"
+						],
+						"outputs": [],
+						"execution_count": 14
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"collapsed": false
+						},
+						"source": [
+							"# ==========================================================\n",
+							"# Incremental Filter (CDC)\n",
+							"# ==========================================================\n",
+							"\n",
+							"if last_watermark_value :\n",
+							"    df_incremental = (bronze_df\n",
+							"                        .filter(col(\"last_updated_ts\") > lit(last_watermark_value))  \n",
+							"                    )\n",
+							"else:\n",
+							"    # First run - process everything\n",
+							"    print(\"This is first run... Processing everything...\")\n",
+							"    df_incremental = bronze_df\n",
+							"\n",
+							"incremental_record_count = df_incremental.count()\n",
+							"print(f\"Incremental records count : {incremental_record_count}\")\n",
+							"display(df_incremental)"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"# ==========================================================\n",
+							"# Check if Silver Delta Table Exists\n",
+							"# ==========================================================\n",
+							"\n",
+							"from delta.tables import DeltaTable\n",
+							"\n",
+							"try:\n",
+							"    delta_silver = DeltaTable.forPath(spark,silver_path)\n",
+							"    silver_exists = True\n",
+							"    print(\"Silver Delta Table Exists\")\n",
+							"except:\n",
+							"    silver_exists = False\n",
+							"    print(\"Silver Delta Table Does Not Exist\")"
+						],
+						"outputs": [],
+						"execution_count": 24
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"from pyspark.sql.functions import col\n",
+							"# ==========================================================\n",
+							"# First Time Silver Load\n",
+							"# ==========================================================\n",
+							"\n",
+							"if not silver_exists:\n",
+							"\n",
+							"    print(\"First Run - Creating silver delta table...\")\n",
+							"\n",
+							"    # First run: all incremental records are inserts\n",
+							"    insert_count = incremental_record_count\n",
+							"    update_count = 0\n",
+							"\n",
+							"    df_incremental.write \\\n",
+							"        .format(\"delta\")\\\n",
+							"        .mode(\"overwrite\") \\\n",
+							"        .save(silver_path)\n",
+							"\n",
+							"    print(f\"Silver Table Created Successfully with {incremental_record_count} records.\")\n",
+							"    print(f\"Insert Count : {insert_count}\")\n",
+							"    print(f\"Update Count : {update_count}\")\n",
+							"else:\n",
+							"    print(\"Silver delta table exists... Performing Delta Merge\")\n",
+							"\n",
+							"    # Read existing Silver as DataFrame\n",
+							"    silver_df = spark.read.format(\"delta\").load(silver_path)\n",
+							"\n",
+							"    # ------------------------------------------------------\n",
+							"    # Step 1 - Calculate Insert Count\n",
+							"    # ------------------------------------------------------\n",
+							"\n",
+							"    df_new_records = (\n",
+							"        df_incremental.alias(\"source\")\n",
+							"        .join(\n",
+							"            silver_df.alias(\"target\"),\n",
+							"            on=\"customer_id\",\n",
+							"            how=\"left_anti\"\n",
+							"        )\n",
+							"    )\n",
+							"\n",
+							"    insert_count = df_new_records.count()\n",
+							"\n",
+							"    print(f\"Insert Count : {insert_count}\")\n",
+							"\n",
+							"    # ------------------------------------------------------\n",
+							"    # Step 2 - Find Matching Records\n",
+							"    # ------------------------------------------------------\n",
+							"\n",
+							"    df_matching_records = (\n",
+							"        df_incremental.alias(\"source\")\n",
+							"        .join(\n",
+							"            df_silver.alias(\"target\"),\n",
+							"            on=\"customer_id\",\n",
+							"            how=\"inner\"\n",
+							"        )\n",
+							"    )\n",
+							"            \n",
+							"    df_updated_records = (\n",
+							"    df_matching_records.filter(\n",
+							"        (col(\"source.city\") != col(\"target.city\")) |\n",
+							"        (col(\"source.created_date\") != col(\"target.created_date\")) |\n",
+							"        (col(\"source.customer_status\") != col(\"target.customer_status\")) |\n",
+							"        (col(\"source.date_of_birth\") != col(\"target.date_of_birth\")) |\n",
+							"        (col(\"source.email\") != col(\"target.email\")) |\n",
+							"        (col(\"source.first_name\") != col(\"target.first_name\")) |\n",
+							"        (col(\"source.gender\") != col(\"target.gender\")) |\n",
+							"        (col(\"source.last_name\") != col(\"target.last_name\")) |\n",
+							"        (col(\"source.phone_number\") != col(\"target.phone_number\")) |\n",
+							"        (col(\"source.state\") != col(\"target.state\")) |\n",
+							"        (col(\"source.zip_code\") != col(\"target.zip_code\"))\n",
+							"    )\n",
+							")    \n",
+							"\n",
+							"    # ------------------------------------------------------\n",
+							"    # Step 3 - Update Count\n",
+							"    # (We'll implement this next)\n",
+							"    # ------------------------------------------------------\n",
+							"    update_count = df_updated_records.count()\n",
+							"\n",
+							"    print(f\"Update Count : {update_count}\")\n",
+							"\n",
+							"    # ------------------------------------------------------\n",
+							"    # Step 4 - Delta Merge\n",
+							"    # ------------------------------------------------------\n",
+							"    delta_silver.alias(\"target\")\\\n",
+							"        .merge(df_incremental.alias(\"source\"),\n",
+							"        \"target.customer_id = source.customer_id\"\n",
+							"        )\\\n",
+							"        .whenMatchedUpdateAll() \\\n",
+							"        .whenNotMatchedInsertAll()\\\n",
+							"        .execute()\n",
+							"    print(\"Delta MERGE completed successfully..\")"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"# ==========================================================\n",
+							"# Get Latest Watermark\n",
+							"# ==========================================================\n",
+							"\n",
+							"from pyspark.sql.functions import max\n",
+							"new_watermark = df_incremental.agg(max(\"last_updated_ts\").alias(\"last_watermark_value\")).collect()[0][\"last_watermark_value\"]\n",
+							"\n",
+							"print(f\"New watermark : {new_watermark}\")"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"import json\n",
+							"from notebookutils import mssparkutils\n",
+							"# ==========================================================\n",
+							"# Notebook Output - Returing the values to ADF pipeline\n",
+							"# ==========================================================\n",
+							"\n",
+							"notebook_output = {\n",
+							"    \"status\": \"Success\",\n",
+							"    \"source_name\": \"customer\",\n",
+							"    \"bronze_record_count\": bronze_record_count,\n",
+							"    \"incremental_record_count\": incremental_record_count,\n",
+							"    \"insert_count\": insert_count,\n",
+							"    \"update_count\": update_count,\n",
+							"    \"new_watermark\": str(new_watermark)\n",
+							"}\n",
+							"\n",
+							"mssparkutils.notebook.exit(json.dumps(notebook_output))"
+						],
+						"outputs": [],
+						"execution_count": null
 					}
 				]
 			},
 			"dependsOn": []
 		},
 		{
-			"name": "[concat(parameters('workspaceName'), '/nb_data_quality')]",
+			"name": "[concat(parameters('workspaceName'), '/nb_common_sql')]",
 			"type": "Microsoft.Synapse/workspaces/notebooks",
 			"apiVersion": "2019-06-01-preview",
 			"properties": {
@@ -2119,17 +2495,21 @@
 				},
 				"nbformat": 4,
 				"nbformat_minor": 2,
+				"bigDataPool": {
+					"referenceName": "sparksmall",
+					"type": "BigDataPoolReference"
+				},
 				"sessionProperties": {
 					"driverMemory": "28g",
 					"driverCores": 4,
 					"executorMemory": "28g",
 					"executorCores": 4,
-					"numExecutors": 2,
+					"numExecutors": 1,
 					"conf": {
-						"spark.dynamicAllocation.enabled": "false",
-						"spark.dynamicAllocation.minExecutors": "2",
+						"spark.dynamicAllocation.enabled": "true",
+						"spark.dynamicAllocation.minExecutors": "1",
 						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "67d002ce-5ecd-4999-9d0f-8ffa079e9a3a"
+						"spark.autotune.trackingId": "1e282640-13bd-4393-8447-6e914fd7284a"
 					}
 				},
 				"metadata": {
@@ -2137,16 +2517,32 @@
 					"enableDebugMode": false,
 					"kernelspec": {
 						"name": "synapse_pyspark",
-						"display_name": "python"
+						"display_name": "Synapse PySpark"
 					},
 					"language_info": {
 						"name": "python"
+					},
+					"a365ComputeOptions": {
+						"id": "/subscriptions/c2cd82ac-1b67-4f57-ae79-64d3e1739263/resourceGroups/rg-ibdp-dev/providers/Microsoft.Synapse/workspaces/insurance-batch-data-processing/bigDataPools/sparksmall",
+						"name": "sparksmall",
+						"type": "Spark",
+						"endpoint": "https://insurance-batch-data-processing.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/sparksmall",
+						"auth": {
+							"type": "AAD",
+							"authResource": "https://dev.azuresynapse.net"
+						},
+						"sparkVersion": "3.5",
+						"nodeCount": 10,
+						"cores": 4,
+						"memory": 28,
+						"automaticScaleJobs": true
 					},
 					"sessionKeepAliveTimeout": 30
 				},
 				"cells": [
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							""
 						],
@@ -2698,7 +3094,7 @@
 						"spark.dynamicAllocation.enabled": "true",
 						"spark.dynamicAllocation.minExecutors": "1",
 						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "25b7d297-58e1-467f-90c5-b2b27ac92e4c"
+						"spark.autotune.trackingId": "65e353cc-3116-4db0-afa7-1cb414f7ef6e"
 					}
 				},
 				"metadata": {
@@ -2723,13 +3119,15 @@
 						"sparkVersion": "3.5",
 						"nodeCount": 10,
 						"cores": 4,
-						"memory": 28
+						"memory": 28,
+						"automaticScaleJobs": true
 					},
 					"sessionKeepAliveTimeout": 30
 				},
 				"cells": [
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							""
 						],
@@ -2814,17 +3212,59 @@
 			"location": "westus2"
 		},
 		{
-			"name": "[concat(parameters('workspaceName'), '/ls_keyvault')]",
-			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"name": "[concat(parameters('workspaceName'), '/pl_customer_silver')]",
+			"type": "Microsoft.Synapse/workspaces/pipelines",
 			"apiVersion": "2019-06-01-preview",
 			"properties": {
-				"annotations": [],
-				"type": "AzureKeyVault",
-				"typeProperties": {
-					"baseUrl": "[parameters('ls_keyvault_properties_typeProperties_baseUrl')]"
-				}
+				"activities": [
+					{
+						"name": "nb_customer_silver",
+						"type": "SynapseNotebook",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebook": {
+								"referenceName": "nb_customer_silver",
+								"type": "NotebookReference"
+							},
+							"snapshot": true,
+							"sparkPool": {
+								"referenceName": "sparksmall",
+								"type": "BigDataPoolReference"
+							},
+							"executorSize": "Small",
+							"conf": {
+								"spark.dynamicAllocation.enabled": true,
+								"spark.dynamicAllocation.minExecutors": 2,
+								"spark.dynamicAllocation.maxExecutors": 4
+							},
+							"driverSize": "Small",
+							"numExecutors": 2,
+							"authentication": {
+								"type": "MSI"
+							}
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"folder": {
+					"name": "pipelines/silver/customer"
+				},
+				"annotations": []
 			},
-			"dependsOn": []
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/notebooks/nb_customer_silver')]",
+				"[concat(variables('workspaceId'), '/bigDataPools/sparksmall')]"
+			]
 		}
 	]
 }

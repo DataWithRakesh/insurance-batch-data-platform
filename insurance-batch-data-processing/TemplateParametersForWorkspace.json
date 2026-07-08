@@ -23,6 +23,9 @@
 		"insurance-data-platform-WorkspaceDefaultStorage_properties_typeProperties_url": {
 			"value": "https://rakeshsynapseadlsgen2.dfs.core.windows.net"
 		},
+		"ls_keyvault_properties_typeProperties_baseUrl": {
+			"value": "https://kv-ibdp-dev.vault.azure.net/"
+		},
 		"ls_saibdpdev_properties_typeProperties_url": {
 			"value": "https://saibdpdev.dfs.core.windows.net/"
 		},
@@ -34,9 +37,6 @@
 		},
 		"ls_slq_server_properties_typeProperties_userName": {
 			"value": "sqladmin"
-		},
-		"ls_keyvault_properties_typeProperties_baseUrl": {
-			"value": "https://kv-ibdp-dev.vault.azure.net/"
 		}
 	}
 }
