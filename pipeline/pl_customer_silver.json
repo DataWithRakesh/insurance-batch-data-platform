@@ -27,11 +27,11 @@
 					"executorSize": "Small",
 					"conf": {
 						"spark.dynamicAllocation.enabled": true,
-						"spark.dynamicAllocation.minExecutors": 2,
-						"spark.dynamicAllocation.maxExecutors": 4
+						"spark.dynamicAllocation.minExecutors": 1,
+						"spark.dynamicAllocation.maxExecutors": 2
 					},
 					"driverSize": "Small",
-					"numExecutors": 2,
+					"numExecutors": 1,
 					"authentication": {
 						"type": "MSI"
 					}
