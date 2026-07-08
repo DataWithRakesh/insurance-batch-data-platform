@@ -1,0 +1,46 @@
+{
+	"name": "pl_customer_silver",
+	"properties": {
+		"activities": [
+			{
+				"name": "nb_customer_silver",
+				"type": "SynapseNotebook",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebook": {
+						"referenceName": "nb_customer_silver",
+						"type": "NotebookReference"
+					},
+					"snapshot": true,
+					"sparkPool": {
+						"referenceName": "sparksmall",
+						"type": "BigDataPoolReference"
+					},
+					"executorSize": "Small",
+					"conf": {
+						"spark.dynamicAllocation.enabled": true,
+						"spark.dynamicAllocation.minExecutors": 2,
+						"spark.dynamicAllocation.maxExecutors": 4
+					},
+					"driverSize": "Small",
+					"numExecutors": 2,
+					"authentication": {
+						"type": "MSI"
+					}
+				}
+			}
+		],
+		"folder": {
+			"name": "pipelines/silver/customer"
+		},
+		"annotations": []
+	}
+}

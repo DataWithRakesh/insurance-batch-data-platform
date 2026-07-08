@@ -776,7 +776,7 @@
 			}
 		},
 		"folder": {
-			"name": "customer"
+			"name": "pipelines/bronze/customer"
 		},
 		"annotations": []
 	}
