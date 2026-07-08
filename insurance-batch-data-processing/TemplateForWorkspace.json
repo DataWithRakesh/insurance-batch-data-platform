@@ -1990,7 +1990,7 @@
 						"spark.dynamicAllocation.enabled": "true",
 						"spark.dynamicAllocation.minExecutors": "1",
 						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "867936c3-6728-482e-be88-09443a204b5f"
+						"spark.autotune.trackingId": "a6556bf6-8457-4a8e-ab9f-ab8e4324ed14"
 					}
 				},
 				"metadata": {
@@ -3242,11 +3242,11 @@
 							"executorSize": "Small",
 							"conf": {
 								"spark.dynamicAllocation.enabled": true,
-								"spark.dynamicAllocation.minExecutors": 2,
-								"spark.dynamicAllocation.maxExecutors": 4
+								"spark.dynamicAllocation.minExecutors": 1,
+								"spark.dynamicAllocation.maxExecutors": 2
 							},
 							"driverSize": "Small",
-							"numExecutors": 2,
+							"numExecutors": 1,
 							"authentication": {
 								"type": "MSI"
 							}
