@@ -20,7 +20,7 @@
 				"spark.dynamicAllocation.enabled": "true",
 				"spark.dynamicAllocation.minExecutors": "1",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "b728bdaf-c5a1-485d-9527-714d99c67599"
+				"spark.autotune.trackingId": "9832944b-42d7-4bfc-9cbb-2c5a4ba6aaab"
 			}
 		},
 		"metadata": {
@@ -60,7 +60,7 @@
 					"# Purpose : Incremental Processing using Delta Lake MERGE\n",
 					"# =========================================================="
 				],
-				"execution_count": 1
+				"execution_count": 31
 			},
 			{
 				"cell_type": "code",
@@ -70,7 +70,7 @@
 					"from delta.tables import DeltaTable\n",
 					"from pyspark.sql.window import Window"
 				],
-				"execution_count": 2
+				"execution_count": 32
 			},
 			{
 				"cell_type": "code",
@@ -94,7 +94,7 @@
 					"    \"ls_keyvault\"\n",
 					")"
 				],
-				"execution_count": 3
+				"execution_count": 33
 			},
 			{
 				"cell_type": "code",
@@ -121,7 +121,7 @@
 					"    \"driver\": \"com.microsoft.sqlserver.jdbc.SQLServerDriver\"\n",
 					"}"
 				],
-				"execution_count": 5
+				"execution_count": 34
 			},
 			{
 				"cell_type": "code",
@@ -349,6 +349,7 @@
 			{
 				"cell_type": "code",
 				"source": [
+					"from pyspark.sql.functions import col\n",
 					"# ==========================================================\n",
 					"# First Time Silver Load\n",
 					"# ==========================================================\n",
@@ -405,19 +406,32 @@
 					"        )\n",
 					"    )\n",
 					"            \n",
-					"        \n",
+					"    df_updated_records = (\n",
+					"    df_matching_records.filter(\n",
+					"        (col(\"source.city\") != col(\"target.city\")) |\n",
+					"        (col(\"source.created_date\") != col(\"target.created_date\")) |\n",
+					"        (col(\"source.customer_status\") != col(\"target.customer_status\")) |\n",
+					"        (col(\"source.date_of_birth\") != col(\"target.date_of_birth\")) |\n",
+					"        (col(\"source.email\") != col(\"target.email\")) |\n",
+					"        (col(\"source.first_name\") != col(\"target.first_name\")) |\n",
+					"        (col(\"source.gender\") != col(\"target.gender\")) |\n",
+					"        (col(\"source.last_name\") != col(\"target.last_name\")) |\n",
+					"        (col(\"source.phone_number\") != col(\"target.phone_number\")) |\n",
+					"        (col(\"source.state\") != col(\"target.state\")) |\n",
+					"        (col(\"source.zip_code\") != col(\"target.zip_code\"))\n",
+					"    )\n",
+					")    \n",
 					"\n",
 					"    # ------------------------------------------------------\n",
-					"    # Step 2 - Update Count\n",
+					"    # Step 3 - Update Count\n",
 					"    # (We'll implement this next)\n",
 					"    # ------------------------------------------------------\n",
-					"\n",
-					"    update_count = 0\n",
+					"    update_count = df_updated_records.count()\n",
 					"\n",
 					"    print(f\"Update Count : {update_count}\")\n",
 					"\n",
 					"    # ------------------------------------------------------\n",
-					"    # Step 3 - Delta Merge\n",
+					"    # Step 4 - Delta Merge\n",
 					"    # ------------------------------------------------------\n",
 					"    delta_silver.alias(\"target\")\\\n",
 					"        .merge(df_incremental.alias(\"source\"),\n",
@@ -442,7 +456,22 @@
 					"\n",
 					"print(f\"New watermark : {new_watermark}\")"
 				],
-				"execution_count": 29
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"import json\n",
+					"from notebookutils import mssparkutils\n",
+					"# ==========================================================\n",
+					"# Notebook Output - Returing the values to ADF pipeline\n",
+					"# ==========================================================\n",
+					"\n",
+					"notebook_output = {\n",
+					"    \"status\": \"success\"\n",
+					"}"
+				],
+				"execution_count": null
 			}
 		]
 	}
