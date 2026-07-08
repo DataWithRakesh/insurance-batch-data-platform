@@ -20,7 +20,7 @@
 				"spark.dynamicAllocation.enabled": "true",
 				"spark.dynamicAllocation.minExecutors": "1",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "9832944b-42d7-4bfc-9cbb-2c5a4ba6aaab"
+				"spark.autotune.trackingId": "77683813-c5a0-46fb-a50f-2b79f18a0b8c"
 			}
 		},
 		"metadata": {
@@ -468,8 +468,19 @@
 					"# ==========================================================\n",
 					"\n",
 					"notebook_output = {\n",
-					"    \"status\": \"success\"\n",
-					"}"
+					"    \"status\": \"success\",\n",
+					"    \"source_name\": \"customer\",\n",
+					"    \"bronze_record_count\": bronze_record_count,\n",
+					"    \"incremental_record_count\" incremental_record_count,\n",
+					"    \"insert_count\": insert_count,\n",
+					"    \"update_count\": update_count,\n",
+					"    \"new_watermark\": str(new_watermark),\n",
+					"    \"batch_id\": batch_id\n",
+					"}\n",
+					"\n",
+					"mssparkutils.notebook.exit(\n",
+					"    json.dumps(notebook_output)\n",
+					")"
 				],
 				"execution_count": null
 			}
