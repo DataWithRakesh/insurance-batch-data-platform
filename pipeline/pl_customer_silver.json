@@ -160,6 +160,166 @@
 					"referenceName": "ls_slq_server",
 					"type": "LinkedServiceReference"
 				}
+			},
+			{
+				"name": "sp_insert_error_log",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "sp_update_watermark",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[dbo].[sp_insert_error_log]",
+					"storedProcedureParameters": {
+						"batch_date": {
+							"value": "@formatDateTime(utcNow(),'yyyy-MM-dd')",
+							"type": "DateTime"
+						},
+						"error_message": {
+							"value": {
+								"value": "@activity('nb_customer_silver').error.message",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"error_timestamp": {
+							"value": "@utcNow()",
+							"type": "DateTime"
+						},
+						"layer": {
+							"value": "Silver",
+							"type": "String"
+						},
+						"notebook_name": {
+							"value": "nb_customer_silver",
+							"type": "String"
+						},
+						"pipeline_name": {
+							"value": "@pipeline().Pipeline",
+							"type": "String"
+						},
+						"run_id": {
+							"value": "@pipeline().RunId",
+							"type": "String"
+						},
+						"source_name": {
+							"value": {
+								"value": "@json(activity('nb_customer_silver').output.result.exitValue).source_name",
+								"type": "Expression"
+							},
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_slq_server",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "sp_update_pipeline_run_success",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "sp_insert_audit_log",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[dbo].[sp_update_pipeline_run]",
+					"storedProcedureParameters": {
+						"end_time": {
+							"value": "@utcNow()",
+							"type": "DateTime"
+						},
+						"error_message": {
+							"value": null,
+							"type": "String"
+						},
+						"run_id": {
+							"value": "@pipeline().RunId",
+							"type": "String"
+						},
+						"status": {
+							"value": {
+								"value": "@json(activity('nb_customer_silver').output.result.exitValue).status",
+								"type": "Expression"
+							},
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_slq_server",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "sp_update_pipeline_run_failure",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "sp_insert_error_log",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[dbo].[sp_update_pipeline_run]",
+					"storedProcedureParameters": {
+						"end_time": {
+							"value": "@utcNow()",
+							"type": "DateTime"
+						},
+						"error_message": {
+							"value": "@activity('nb_customer_silver').error.message",
+							"type": "String"
+						},
+						"run_id": {
+							"value": "@pipeline().RunId",
+							"type": "String"
+						},
+						"status": {
+							"value": "Failed",
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_slq_server",
+					"type": "LinkedServiceReference"
+				}
 			}
 		],
 		"folder": {
