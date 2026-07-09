@@ -36,6 +36,49 @@
 						"type": "MSI"
 					}
 				}
+			},
+			{
+				"name": "sp_update_watermark",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "nb_customer_silver",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[dbo].[sp_update_watermark]",
+					"storedProcedureParameters": {
+						"last_watermark_value": {
+							"value": {
+								"value": "@json(activity('nb_customer_silver').output.result.exitValue).new_watermark",
+								"type": "Expression"
+							},
+							"type": "DateTime"
+						},
+						"source_name": {
+							"value": {
+								"value": "@json(activity('nb_customer_silver').output.result.exitValue).source_name",
+								"type": "Expression"
+							},
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_slq_server",
+					"type": "LinkedServiceReference"
+				}
 			}
 		],
 		"folder": {
