@@ -646,7 +646,7 @@
 				"userProperties": [],
 				"typeProperties": {
 					"variableName": "v_insert_count",
-					"value": ""
+					"value": 0
 				}
 			},
 			{
