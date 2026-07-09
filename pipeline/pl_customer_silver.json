@@ -79,6 +79,87 @@
 					"referenceName": "ls_slq_server",
 					"type": "LinkedServiceReference"
 				}
+			},
+			{
+				"name": "sp_insert_audit_log",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "sp_update_watermark",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[dbo].[sp_insert_audit_log]",
+					"storedProcedureParameters": {
+						"batch_date": {
+							"value": "@formatDateTime(utcNow(),'yyyy-MM-dd')",
+							"type": "DateTime"
+						},
+						"bronze_record_count": {
+							"value": "@json(activity('nb_customer_silver').output.result.exitValue).bronze_record_count",
+							"type": "Int32"
+						},
+						"duration_seconds": {
+							"value": "0",
+							"type": "Int32"
+						},
+						"end_time": {
+							"value": "@utcNow()",
+							"type": "DateTime"
+						},
+						"incremental_record_count": {
+							"value": "@json(activity('nb_customer_silver').output.result.exitValue).incremental_record_count",
+							"type": "Int32"
+						},
+						"insert_count": {
+							"value": "@json(activity('nb_customer_silver').output.result.exitValue).insert_count",
+							"type": "Int32"
+						},
+						"layer": {
+							"value": "Silver",
+							"type": "String"
+						},
+						"records_rejected": {
+							"value": "0",
+							"type": "Int32"
+						},
+						"run_id": {
+							"value": "@pipeline().RunId",
+							"type": "String"
+						},
+						"source_name": {
+							"value": "@json(activity('nb_customer_silver').output.result.exitValue).source_name",
+							"type": "String"
+						},
+						"start_time": {
+							"value": "@utcNow()",
+							"type": "DateTime"
+						},
+						"status": {
+							"value": "@json(activity('nb_customer_silver').output.result.exitValue).status",
+							"type": "String"
+						},
+						"update_count": {
+							"value": "@json(activity('nb_customer_silver').output.result.exitValue).update_count",
+							"type": "Int32"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_slq_server",
+					"type": "LinkedServiceReference"
+				}
 			}
 		],
 		"folder": {
