@@ -465,7 +465,7 @@
 							"type": "String"
 						},
 						"notebook_name": {
-							"value": "",
+							"value": "ADF Pipeline Call.No Notebook",
 							"type": "String"
 						},
 						"pipeline_name": {
@@ -624,7 +624,7 @@
 				},
 				"userProperties": [],
 				"typeProperties": {
-					"variableName": "v_records_read",
+					"variableName": "v_bronze_record_count",
 					"value": 0
 				}
 			},
@@ -645,8 +645,8 @@
 				},
 				"userProperties": [],
 				"typeProperties": {
-					"variableName": "v_records_written",
-					"value": 0
+					"variableName": "v_insert_count",
+					"value": ""
 				}
 			},
 			{
@@ -671,7 +671,7 @@
 				}
 			},
 			{
-				"name": "set_records_read_after_df",
+				"name": "set_bronze_record_count",
 				"type": "SetVariable",
 				"dependsOn": [
 					{
@@ -687,7 +687,7 @@
 				},
 				"userProperties": [],
 				"typeProperties": {
-					"variableName": "v_records_read",
+					"variableName": "v_bronze_record_count",
 					"value": 1000
 				}
 			},
@@ -696,7 +696,7 @@
 				"type": "SetVariable",
 				"dependsOn": [
 					{
-						"activity": "set_records_read_after_df",
+						"activity": "set_bronze_record_count",
 						"dependencyConditions": [
 							"Succeeded"
 						]
@@ -709,7 +709,7 @@
 				"userProperties": [],
 				"typeProperties": {
 					"variableName": "v_records_written",
-					"value": 1000
+					"value": "1000"
 				}
 			},
 			{
@@ -759,20 +759,28 @@
 			}
 		],
 		"variables": {
-			"v_start_time": {
-				"type": "String"
+			"v_bronze_record_count": {
+				"type": "Integer",
+				"defaultValue": 0
 			},
-			"v_records_read": {
-				"type": "Integer"
+			"v_incremental_record_count": {
+				"type": "Integer",
+				"defaultValue": 0
 			},
-			"v_records_written": {
-				"type": "Integer"
+			"v_insert_count": {
+				"type": "Integer",
+				"defaultValue": 0
+			},
+			"v_update_count": {
+				"type": "Integer",
+				"defaultValue": 0
 			},
 			"v_records_rejected": {
-				"type": "Integer"
+				"type": "Integer",
+				"defaultValue": 0
 			},
-			"v_duration_seconds": {
-				"type": "Integer"
+			"v_start_time": {
+				"type": "String"
 			}
 		},
 		"folder": {
