@@ -730,7 +730,7 @@
 						"userProperties": [],
 						"typeProperties": {
 							"variableName": "v_incremental_record_count",
-							"value": ""
+							"value": 0
 						}
 					},
 					{
@@ -751,7 +751,7 @@
 						"userProperties": [],
 						"typeProperties": {
 							"variableName": "v_insert_count",
-							"value": ""
+							"value": 0
 						}
 					},
 					{
