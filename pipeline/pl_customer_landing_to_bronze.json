@@ -335,7 +335,10 @@
 					"storedProcedureName": "[dbo].[sp_update_pipeline_run]",
 					"storedProcedureParameters": {
 						"end_time": {
-							"value": "@utcNow()",
+							"value": {
+								"value": "@utcNow()",
+								"type": "Expression"
+							},
 							"type": "DateTime"
 						},
 						"error_message": {
@@ -343,7 +346,10 @@
 							"type": "String"
 						},
 						"run_id": {
-							"value": "@pipeline().RunId",
+							"value": {
+								"value": "@pipeline().RunId",
+								"type": "Expression"
+							},
 							"type": "String"
 						},
 						"status": {
@@ -510,27 +516,45 @@
 					"storedProcedureName": "[dbo].[sp_insert_audit_log]",
 					"storedProcedureParameters": {
 						"batch_date": {
-							"value": "@formatDateTime(utcNow(),'yyyy-MM-dd')",
+							"value": {
+								"value": "@formatDateTime(utcNow(),'yyyy-MM-dd')",
+								"type": "Expression"
+							},
 							"type": "DateTime"
 						},
 						"bronze_record_count": {
-							"value": "@variables('v_bronze_record_count')",
+							"value": {
+								"value": "@variables('v_bronze_record_count')",
+								"type": "Expression"
+							},
 							"type": "Int32"
 						},
 						"duration_seconds": {
-							"value": "@variables('v_duration_seconds')",
+							"value": {
+								"value": "@variables('v_duration_seconds')",
+								"type": "Expression"
+							},
 							"type": "Int32"
 						},
 						"end_time": {
-							"value": "@utcNow()",
+							"value": {
+								"value": "@utcNow()",
+								"type": "Expression"
+							},
 							"type": "DateTime"
 						},
 						"incremental_record_count": {
-							"value": "@variables('v_incremental_record_count')",
+							"value": {
+								"value": "@variables('v_incremental_record_count')",
+								"type": "Expression"
+							},
 							"type": "Int32"
 						},
 						"insert_count": {
-							"value": "@variables('v_insert_count')",
+							"value": {
+								"value": "@variables('v_insert_count')",
+								"type": "Expression"
+							},
 							"type": "Int32"
 						},
 						"layer": {
@@ -538,11 +562,17 @@
 							"type": "String"
 						},
 						"records_rejected": {
-							"value": "@variables('v_records_rejected')",
+							"value": {
+								"value": "@variables('v_records_rejected')",
+								"type": "Expression"
+							},
 							"type": "Int32"
 						},
 						"run_id": {
-							"value": "@pipeline().RunId",
+							"value": {
+								"value": "@pipeline().RunId",
+								"type": "Expression"
+							},
 							"type": "String"
 						},
 						"source_name": {
@@ -550,7 +580,10 @@
 							"type": "String"
 						},
 						"start_time": {
-							"value": "@variables('v_start_time')",
+							"value": {
+								"value": "@variables('v_start_time')",
+								"type": "Expression"
+							},
 							"type": "DateTime"
 						},
 						"status": {
@@ -558,7 +591,10 @@
 							"type": "String"
 						},
 						"update_count": {
-							"value": "@variables('v_update_count')",
+							"value": {
+								"value": "@variables('v_update_count')",
+								"type": "Expression"
+							},
 							"type": "Int32"
 						}
 					}
@@ -624,7 +660,7 @@
 				"userProperties": [],
 				"typeProperties": {
 					"variableName": "v_incremental_record_count",
-					"value": ""
+					"value": 0
 				}
 			},
 			{
@@ -645,7 +681,7 @@
 				"userProperties": [],
 				"typeProperties": {
 					"variableName": "v_insert_count",
-					"value": ""
+					"value": 0
 				}
 			},
 			{
@@ -690,7 +726,10 @@
 				"userProperties": [],
 				"typeProperties": {
 					"variableName": "v_incremental_record_count",
-					"value": "@variables('v_bronze_record_count')"
+					"value": {
+						"value": "@variables('v_bronze_record_count')",
+						"type": "Expression"
+					}
 				}
 			},
 			{
@@ -711,7 +750,10 @@
 				"userProperties": [],
 				"typeProperties": {
 					"variableName": "v_insert_count",
-					"value": "@variables('v_bronze_record_count')"
+					"value": {
+						"value": "@variables('v_bronze_record_count')",
+						"type": "Expression"
+					}
 				}
 			},
 			{
