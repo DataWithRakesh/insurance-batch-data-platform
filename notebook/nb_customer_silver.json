@@ -20,7 +20,7 @@
 				"spark.dynamicAllocation.enabled": "true",
 				"spark.dynamicAllocation.minExecutors": "1",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "e0229b81-eac2-45f7-830b-61cb55a1c821"
+				"spark.autotune.trackingId": "67b58a54-26d8-4dd0-a038-c6a47385265e"
 			}
 		},
 		"metadata": {
@@ -60,15 +60,15 @@
 				},
 				"source": [
 					"start_time = \"\"\n",
-					"source_name = \"customer\""
+					"source_name = \"\""
 				],
 				"execution_count": 25
 			},
 			{
 				"cell_type": "code",
 				"source": [
-					"print(start_time)\n",
-					"print(source_name)"
+					"print(f\"Start Time: {start_time}\")\n",
+					"print(f\"Source Name: {source_name}\")"
 				],
 				"execution_count": 27
 			},
