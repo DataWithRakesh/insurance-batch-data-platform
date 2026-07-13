@@ -27,14 +27,6 @@
 						"type": "NotebookReference"
 					},
 					"parameters": {
-						"run_id": {
-							"value": "@pipeline().RunId",
-							"type": "string"
-						},
-						"batch_id": {
-							"value": "@variables('v_batch_id')",
-							"type": "string"
-						},
 						"start_time": {
 							"value": "@variables('v_start_time')",
 							"type": "string"
@@ -255,7 +247,14 @@
 			{
 				"name": "sp_insert_pipeline_run",
 				"type": "SqlServerStoredProcedure",
-				"dependsOn": [],
+				"dependsOn": [
+					{
+						"activity": "Set v_start_time",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
 				"policy": {
 					"timeout": "0.12:00:00",
 					"retry": 0,
@@ -294,7 +293,7 @@
 						},
 						"start_time": {
 							"value": {
-								"value": "@utcNow()",
+								"value": "@variables('v_start_time')",
 								"type": "Expression"
 							},
 							"type": "DateTime"
@@ -313,8 +312,28 @@
 					"referenceName": "ls_slq_server",
 					"type": "LinkedServiceReference"
 				}
+			},
+			{
+				"name": "Set v_start_time",
+				"description": "",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "v_start_time",
+					"value": "@utcNow()"
+				}
 			}
 		],
+		"variables": {
+			"v_start_time": {
+				"type": "String"
+			}
+		},
 		"folder": {
 			"name": "pipelines/silver/customer"
 		},

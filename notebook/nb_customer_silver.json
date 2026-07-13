@@ -20,7 +20,7 @@
 				"spark.dynamicAllocation.enabled": "true",
 				"spark.dynamicAllocation.minExecutors": "1",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "7c447fdd-2b23-4911-b9c8-629cfcc986e0"
+				"spark.autotune.trackingId": "e0229b81-eac2-45f7-830b-61cb55a1c821"
 			}
 		},
 		"metadata": {
@@ -59,22 +59,18 @@
 					]
 				},
 				"source": [
-					"run_id = \"\"\n",
-					"batch_id = \"\"\n",
 					"start_time = \"\"\n",
 					"source_name = \"customer\""
 				],
-				"execution_count": null
+				"execution_count": 25
 			},
 			{
 				"cell_type": "code",
 				"source": [
-					"print(run_id)\n",
-					"print(batch_id)\n",
 					"print(start_time)\n",
 					"print(source_name)"
 				],
-				"execution_count": null
+				"execution_count": 27
 			},
 			{
 				"cell_type": "code",
@@ -85,7 +81,7 @@
 					"# Purpose : Incremental Processing using Delta Lake MERGE\n",
 					"# =========================================================="
 				],
-				"execution_count": 3
+				"execution_count": 28
 			},
 			{
 				"cell_type": "code",
@@ -95,7 +91,7 @@
 					"from delta.tables import DeltaTable\n",
 					"from pyspark.sql.window import Window"
 				],
-				"execution_count": 4
+				"execution_count": 29
 			},
 			{
 				"cell_type": "code",
@@ -119,7 +115,7 @@
 					"    \"ls_keyvault\"\n",
 					")"
 				],
-				"execution_count": 5
+				"execution_count": 30
 			},
 			{
 				"cell_type": "code",
@@ -146,7 +142,7 @@
 					"    \"driver\": \"com.microsoft.sqlserver.jdbc.SQLServerDriver\"\n",
 					"}"
 				],
-				"execution_count": 6
+				"execution_count": 31
 			},
 			{
 				"cell_type": "code",
@@ -170,7 +166,7 @@
 					"    statement.close()\n",
 					"    connection.close()"
 				],
-				"execution_count": 7
+				"execution_count": 32
 			},
 			{
 				"cell_type": "code",
@@ -191,7 +187,7 @@
 					"\n",
 					""
 				],
-				"execution_count": 8
+				"execution_count": 33
 			},
 			{
 				"cell_type": "code",
@@ -203,7 +199,7 @@
 					"    to_timestamp(col(\"last_updated_ts\"), \"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'\")\n",
 					")"
 				],
-				"execution_count": 9
+				"execution_count": 34
 			},
 			{
 				"cell_type": "code",
@@ -215,7 +211,7 @@
 					"print(\"Current Schema:\")\n",
 					"print(current_schema_json)"
 				],
-				"execution_count": 10
+				"execution_count": 35
 			},
 			{
 				"cell_type": "code",
@@ -242,7 +238,7 @@
 					"\n",
 					"display(schema_history_df)"
 				],
-				"execution_count": 11
+				"execution_count": 36
 			},
 			{
 				"cell_type": "code",
@@ -271,7 +267,7 @@
 					"print(f\"Schema Version : {schema_version}\")\n",
 					""
 				],
-				"execution_count": 12
+				"execution_count": 37
 			},
 			{
 				"cell_type": "code",
@@ -313,7 +309,7 @@
 					"else:\n",
 					"    print(\"No schema change detected\")"
 				],
-				"execution_count": 13
+				"execution_count": 38
 			},
 			{
 				"cell_type": "code",
@@ -333,7 +329,7 @@
 					"\n",
 					"display(watermark_df)"
 				],
-				"execution_count": 14
+				"execution_count": 44
 			},
 			{
 				"cell_type": "code",
@@ -349,7 +345,7 @@
 					"\n",
 					"print(f\"Last watermark value is : {last_watermark_value}\")"
 				],
-				"execution_count": 15
+				"execution_count": 45
 			},
 			{
 				"cell_type": "code",
@@ -374,7 +370,7 @@
 					"print(f\"Incremental records count : {incremental_record_count}\")\n",
 					"display(df_incremental)"
 				],
-				"execution_count": 16
+				"execution_count": 46
 			},
 			{
 				"cell_type": "code",
@@ -393,7 +389,7 @@
 					"    silver_exists = False\n",
 					"    print(\"Silver Delta Table Does Not Exist\")"
 				],
-				"execution_count": 17
+				"execution_count": 48
 			},
 			{
 				"cell_type": "code",
@@ -491,7 +487,7 @@
 					"        .execute()\n",
 					"    print(\"Delta MERGE completed successfully..\")"
 				],
-				"execution_count": 18
+				"execution_count": 49
 			},
 			{
 				"cell_type": "code",
@@ -505,7 +501,7 @@
 					"\n",
 					"print(f\"New watermark : {new_watermark}\")"
 				],
-				"execution_count": 19
+				"execution_count": 50
 			},
 			{
 				"cell_type": "code",
@@ -522,7 +518,7 @@
 					"\n",
 					"print(update_watermark_sql)"
 				],
-				"execution_count": 21
+				"execution_count": 51
 			},
 			{
 				"cell_type": "code",
@@ -533,7 +529,65 @@
 					"\n",
 					"print(\"Watermark updated successfully.\")"
 				],
-				"execution_count": 22
+				"execution_count": 52
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"from datetime import datetime\n",
+					"\n",
+					"end_time = datetime.now()\n",
+					"\n",
+					"batch_date = end_time.strftime(\"%Y-%m-%d\")\n",
+					"end_time_str = end_time.strftime(\"%Y-%m-%d %H:%M:%S\")"
+				],
+				"execution_count": 55
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"duration_seconds = 0"
+				],
+				"execution_count": 56
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"# ==========================================================\n",
+					"# Insert Audit Log\n",
+					"# ==========================================================\n",
+					"\n",
+					"audit_sql = f\"\"\"\n",
+					"EXEC dbo.sp_insert_audit_log\n",
+					"    @run_id = NULL,\n",
+					"    @source_name = '{source_name}',\n",
+					"    @layer = 'Silver',\n",
+					"    @batch_date = '{batch_date}',\n",
+					"    @bronze_record_count = {bronze_record_count},\n",
+					"    @incremental_record_count = {incremental_record_count},\n",
+					"    @insert_count = {insert_count},\n",
+					"    @update_count = {update_count},\n",
+					"    @records_rejected = 0,\n",
+					"    @status = 'Success',\n",
+					"    @start_time = NULL,\n",
+					"    @end_time = '{end_time_str}',\n",
+					"    @duration_seconds = {duration_seconds}\n",
+					"\"\"\"\n",
+					"\n",
+					"print(audit_sql)"
+				],
+				"execution_count": 59
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"# Execute Audit Stored Procedure\n",
+					"\n",
+					"execute_sql(audit_sql)\n",
+					"\n",
+					"print(\"Audit log inserted successfully.\")"
+				],
+				"execution_count": 60
 			},
 			{
 				"cell_type": "code",
