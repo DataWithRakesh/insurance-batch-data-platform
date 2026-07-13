@@ -866,6 +866,32 @@
 					"variableName": "v_records_rejected",
 					"value": 0
 				}
+			},
+			{
+				"name": "exec_pl_customer_silver",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "sp_insert_audit_log",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "pl_customer_silver",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"run_id": "@pipeline().RunId"
+					}
+				}
 			}
 		],
 		"variables": {

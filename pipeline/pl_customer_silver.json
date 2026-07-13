@@ -329,6 +329,11 @@
 				}
 			}
 		],
+		"parameters": {
+			"run_id": {
+				"type": "string"
+			}
+		},
 		"variables": {
 			"v_start_time": {
 				"type": "String"

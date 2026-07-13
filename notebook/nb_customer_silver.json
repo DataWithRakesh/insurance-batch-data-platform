@@ -20,7 +20,7 @@
 				"spark.dynamicAllocation.enabled": "true",
 				"spark.dynamicAllocation.minExecutors": "1",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "67b58a54-26d8-4dd0-a038-c6a47385265e"
+				"spark.autotune.trackingId": "40275745-51a6-4660-8736-9c68932585d4"
 			}
 		},
 		"metadata": {
@@ -60,6 +60,7 @@
 				},
 				"source": [
 					"start_time = \"\"\n",
+					"run_id=\"\"\n",
 					"source_name = \"\""
 				],
 				"execution_count": 25
@@ -68,6 +69,7 @@
 				"cell_type": "code",
 				"source": [
 					"print(f\"Start Time: {start_time}\")\n",
+					"print(f\"Run ID : {run_id}\")\n",
 					"print(f\"Source Name: {source_name}\")"
 				],
 				"execution_count": 27
@@ -534,21 +536,21 @@
 			{
 				"cell_type": "code",
 				"source": [
-					"from datetime import datetime\n",
+					"from datetime import datetime, timezone\n",
 					"\n",
-					"end_time = datetime.now()\n",
+					"# Current UTC time\n",
+					"end_time = datetime.now(timezone.utc)\n",
+					"\n",
+					"# Pipeline start time\n",
+					"start_dt = datetime.fromisoformat(start_time.replace(\"Z\", \"+00:00\"))\n",
+					"\n",
+					"# Duration\n",
+					"duration_seconds = int((end_time - start_dt).total_seconds())\n",
 					"\n",
 					"batch_date = end_time.strftime(\"%Y-%m-%d\")\n",
 					"end_time_str = end_time.strftime(\"%Y-%m-%d %H:%M:%S\")"
 				],
 				"execution_count": 55
-			},
-			{
-				"cell_type": "code",
-				"source": [
-					"duration_seconds = 0"
-				],
-				"execution_count": 56
 			},
 			{
 				"cell_type": "code",
@@ -559,7 +561,7 @@
 					"\n",
 					"audit_sql = f\"\"\"\n",
 					"EXEC dbo.sp_insert_audit_log\n",
-					"    @run_id = NULL,\n",
+					"    @run_id = '{run_id}',\n",
 					"    @source_name = '{source_name}',\n",
 					"    @layer = 'Silver',\n",
 					"    @batch_date = '{batch_date}',\n",
@@ -569,7 +571,7 @@
 					"    @update_count = {update_count},\n",
 					"    @records_rejected = 0,\n",
 					"    @status = 'Success',\n",
-					"    @start_time = NULL,\n",
+					"    @start_time = '{start_dt.strftime(\"%Y-%m-%d %H:%M:%S\")}',\n",
 					"    @end_time = '{end_time_str}',\n",
 					"    @duration_seconds = {duration_seconds}\n",
 					"\"\"\"\n",
@@ -588,29 +590,6 @@
 					"print(\"Audit log inserted successfully.\")"
 				],
 				"execution_count": 60
-			},
-			{
-				"cell_type": "code",
-				"source": [
-					"import json\n",
-					"from notebookutils import mssparkutils\n",
-					"# ==========================================================\n",
-					"# Notebook Output - Returing the values to ADF pipeline\n",
-					"# ==========================================================\n",
-					"\n",
-					"notebook_output = {\n",
-					"    \"status\": \"Success\",\n",
-					"    \"source_name\": \"customer\",\n",
-					"    \"bronze_record_count\": bronze_record_count,\n",
-					"    \"incremental_record_count\": incremental_record_count,\n",
-					"    \"insert_count\": insert_count,\n",
-					"    \"update_count\": update_count,\n",
-					"    \"new_watermark\": str(new_watermark)\n",
-					"}\n",
-					"\n",
-					"mssparkutils.notebook.exit(json.dumps(notebook_output))"
-				],
-				"execution_count": null
 			}
 		]
 	}
