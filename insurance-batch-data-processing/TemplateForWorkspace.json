@@ -1014,6 +1014,24 @@
 								"referenceName": "nb_customer_silver",
 								"type": "NotebookReference"
 							},
+							"parameters": {
+								"run_id": {
+									"value": "@pipeline().RunId",
+									"type": "string"
+								},
+								"batch_id": {
+									"value": "@variables('v_batch_id')",
+									"type": "string"
+								},
+								"start_time": {
+									"value": "@variables('v_start_time')",
+									"type": "string"
+								},
+								"source_name": {
+									"value": "customer",
+									"type": "string"
+								}
+							},
 							"snapshot": true,
 							"sparkPool": {
 								"referenceName": "sparksmall",
@@ -1033,165 +1051,11 @@
 						}
 					},
 					{
-						"name": "sp_update_watermark",
-						"type": "SqlServerStoredProcedure",
-						"dependsOn": [
-							{
-								"activity": "nb_customer_silver",
-								"dependencyConditions": [
-									"Succeeded"
-								]
-							}
-						],
-						"policy": {
-							"timeout": "0.12:00:00",
-							"retry": 0,
-							"retryIntervalInSeconds": 30,
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"storedProcedureName": "[dbo].[sp_update_watermark]",
-							"storedProcedureParameters": {
-								"last_watermark_value": {
-									"value": {
-										"value": "@json(activity('nb_customer_silver').output.exitValue).new_watermark",
-										"type": "Expression"
-									},
-									"type": "DateTime"
-								},
-								"source_name": {
-									"value": {
-										"value": "@json(activity('nb_customer_silver').output.exitValue).source_name",
-										"type": "Expression"
-									},
-									"type": "String"
-								}
-							}
-						},
-						"linkedServiceName": {
-							"referenceName": "ls_slq_server",
-							"type": "LinkedServiceReference"
-						}
-					},
-					{
-						"name": "sp_insert_audit_log",
-						"type": "SqlServerStoredProcedure",
-						"dependsOn": [
-							{
-								"activity": "sp_update_watermark",
-								"dependencyConditions": [
-									"Succeeded"
-								]
-							}
-						],
-						"policy": {
-							"timeout": "0.12:00:00",
-							"retry": 0,
-							"retryIntervalInSeconds": 30,
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"storedProcedureName": "[dbo].[sp_insert_audit_log]",
-							"storedProcedureParameters": {
-								"batch_date": {
-									"value": {
-										"value": "@formatDateTime(utcNow(),'yyyy-MM-dd')",
-										"type": "Expression"
-									},
-									"type": "DateTime"
-								},
-								"bronze_record_count": {
-									"value": {
-										"value": "@json(activity('nb_customer_silver').output.exitValue).bronze_record_count",
-										"type": "Expression"
-									},
-									"type": "Int32"
-								},
-								"duration_seconds": {
-									"value": "0",
-									"type": "Int32"
-								},
-								"end_time": {
-									"value": {
-										"value": "@utcNow()",
-										"type": "Expression"
-									},
-									"type": "DateTime"
-								},
-								"incremental_record_count": {
-									"value": {
-										"value": "@json(activity('nb_customer_silver').output.exitValue).incremental_record_count",
-										"type": "Expression"
-									},
-									"type": "Int32"
-								},
-								"insert_count": {
-									"value": {
-										"value": "@json(activity('nb_customer_silver').output.exitValue).insert_count",
-										"type": "Expression"
-									},
-									"type": "Int32"
-								},
-								"layer": {
-									"value": "Silver",
-									"type": "String"
-								},
-								"records_rejected": {
-									"value": "0",
-									"type": "Int32"
-								},
-								"run_id": {
-									"value": {
-										"value": "@pipeline().RunId",
-										"type": "Expression"
-									},
-									"type": "String"
-								},
-								"source_name": {
-									"value": {
-										"value": "@json(activity('nb_customer_silver').output.result.exitValue).source_name",
-										"type": "Expression"
-									},
-									"type": "String"
-								},
-								"start_time": {
-									"value": {
-										"value": "@utcNow()",
-										"type": "Expression"
-									},
-									"type": "DateTime"
-								},
-								"status": {
-									"value": {
-										"value": "@json(activity('nb_customer_silver').output.exitValue).status",
-										"type": "Expression"
-									},
-									"type": "String"
-								},
-								"update_count": {
-									"value": {
-										"value": "@json(activity('nb_customer_silver').output.exitValue).update_count",
-										"type": "Expression"
-									},
-									"type": "Int32"
-								}
-							}
-						},
-						"linkedServiceName": {
-							"referenceName": "ls_slq_server",
-							"type": "LinkedServiceReference"
-						}
-					},
-					{
 						"name": "sp_insert_error_log",
 						"type": "SqlServerStoredProcedure",
 						"dependsOn": [
 							{
-								"activity": "sp_update_watermark",
+								"activity": "nb_customer_silver",
 								"dependencyConditions": [
 									"Failed"
 								]
@@ -1270,7 +1134,7 @@
 						"type": "SqlServerStoredProcedure",
 						"dependsOn": [
 							{
-								"activity": "sp_insert_audit_log",
+								"activity": "nb_customer_silver",
 								"dependencyConditions": [
 									"Succeeded"
 								]
@@ -2636,7 +2500,7 @@
 						"spark.dynamicAllocation.enabled": "true",
 						"spark.dynamicAllocation.minExecutors": "1",
 						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "6019a882-d0c8-497d-be81-5395a25d6506"
+						"spark.autotune.trackingId": "6c2a9935-c90f-43cc-896f-78e73f734343"
 					}
 				},
 				"metadata": {
@@ -2661,13 +2525,43 @@
 						"sparkVersion": "3.5",
 						"nodeCount": 10,
 						"cores": 4,
-						"memory": 28
+						"memory": 28,
+						"automaticScaleJobs": true
 					},
 					"sessionKeepAliveTimeout": 30
 				},
 				"cells": [
 					{
 						"cell_type": "code",
+						"metadata": {
+							"tags": [
+								"parameters"
+							]
+						},
+						"source": [
+							"run_id = \"\"\n",
+							"batch_id = \"\"\n",
+							"start_time = \"\"\n",
+							"source_name = \"customer\""
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"print(run_id)\n",
+							"print(batch_id)\n",
+							"print(start_time)\n",
+							"print(source_name)"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"# ==========================================================\n",
 							"# Customer Silver Notebook\n",
@@ -2676,10 +2570,11 @@
 							"# =========================================================="
 						],
 						"outputs": [],
-						"execution_count": 31
+						"execution_count": 3
 					},
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"from pyspark.sql.functions import *\n",
 							"from pyspark.sql.types import *\n",
@@ -2687,10 +2582,11 @@
 							"from pyspark.sql.window import Window"
 						],
 						"outputs": [],
-						"execution_count": 32
+						"execution_count": 4
 					},
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"# ==========================================================\n",
 							"# keyvault Connection Configuration\n",
@@ -2712,10 +2608,11 @@
 							")"
 						],
 						"outputs": [],
-						"execution_count": 33
+						"execution_count": 5
 					},
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"# ==========================================================\n",
 							"# JDBC Connection Configuration\n",
@@ -2740,7 +2637,33 @@
 							"}"
 						],
 						"outputs": [],
-						"execution_count": 34
+						"execution_count": 6
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"# ==========================================================\n",
+							"# Execute SQL Stored Procedure\n",
+							"# ==========================================================\n",
+							"\n",
+							"def execute_sql(sql_query):\n",
+							"\n",
+							"    connection = spark._sc._gateway.jvm.java.sql.DriverManager.getConnection(\n",
+							"        jdbc_url,\n",
+							"        jdbc_properties[\"user\"],\n",
+							"        jdbc_properties[\"password\"]\n",
+							"    )\n",
+							"\n",
+							"    statement = connection.createStatement()\n",
+							"\n",
+							"    statement.execute(sql_query)\n",
+							"\n",
+							"    statement.close()\n",
+							"    connection.close()"
+						],
+						"outputs": [],
+						"execution_count": 7
 					},
 					{
 						"cell_type": "code",
@@ -2762,10 +2685,11 @@
 							""
 						],
 						"outputs": [],
-						"execution_count": null
+						"execution_count": 8
 					},
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"from pyspark.sql.functions import col, to_timestamp\n",
 							"\n",
@@ -2775,10 +2699,11 @@
 							")"
 						],
 						"outputs": [],
-						"execution_count": 17
+						"execution_count": 9
 					},
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"# ==========================================================\n",
 							"# Current Schema Validation\n",
@@ -2788,7 +2713,7 @@
 							"print(current_schema_json)"
 						],
 						"outputs": [],
-						"execution_count": null
+						"execution_count": 10
 					},
 					{
 						"cell_type": "code",
@@ -2816,10 +2741,11 @@
 							"display(schema_history_df)"
 						],
 						"outputs": [],
-						"execution_count": 7
+						"execution_count": 11
 					},
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"# ==========================================================\n",
 							"# Compare Schema\n",
@@ -2846,10 +2772,11 @@
 							""
 						],
 						"outputs": [],
-						"execution_count": 8
+						"execution_count": 12
 					},
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"# ==========================================================\n",
 							"# Insert Schema History\n",
@@ -2889,7 +2816,7 @@
 							"    print(\"No schema change detected\")"
 						],
 						"outputs": [],
-						"execution_count": 12
+						"execution_count": 13
 					},
 					{
 						"cell_type": "code",
@@ -2910,10 +2837,11 @@
 							"display(watermark_df)"
 						],
 						"outputs": [],
-						"execution_count": null
+						"execution_count": 14
 					},
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"# ==========================================================\n",
 							"# Read Last Watermark Value\n",
@@ -2927,7 +2855,7 @@
 							"print(f\"Last watermark value is : {last_watermark_value}\")"
 						],
 						"outputs": [],
-						"execution_count": 14
+						"execution_count": 15
 					},
 					{
 						"cell_type": "code",
@@ -2953,10 +2881,11 @@
 							"display(df_incremental)"
 						],
 						"outputs": [],
-						"execution_count": null
+						"execution_count": 16
 					},
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"# ==========================================================\n",
 							"# Check if Silver Delta Table Exists\n",
@@ -2973,10 +2902,11 @@
 							"    print(\"Silver Delta Table Does Not Exist\")"
 						],
 						"outputs": [],
-						"execution_count": 24
+						"execution_count": 17
 					},
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"from pyspark.sql.functions import col\n",
 							"# ==========================================================\n",
@@ -3072,10 +3002,11 @@
 							"    print(\"Delta MERGE completed successfully..\")"
 						],
 						"outputs": [],
-						"execution_count": null
+						"execution_count": 18
 					},
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"# ==========================================================\n",
 							"# Get Latest Watermark\n",
@@ -3087,10 +3018,43 @@
 							"print(f\"New watermark : {new_watermark}\")"
 						],
 						"outputs": [],
-						"execution_count": null
+						"execution_count": 19
 					},
 					{
 						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"# ==========================================================\n",
+							"# Update Watermark\n",
+							"# ==========================================================\n",
+							"\n",
+							"update_watermark_sql = f\"\"\"\n",
+							"EXEC dbo.sp_update_watermark\n",
+							"    @source_name = 'customer',\n",
+							"    @last_watermark_value = '{new_watermark}'\n",
+							"\"\"\"\n",
+							"\n",
+							"print(update_watermark_sql)"
+						],
+						"outputs": [],
+						"execution_count": 21
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"# Execute Stored Procedure\n",
+							"\n",
+							"execute_sql(update_watermark_sql)\n",
+							"\n",
+							"print(\"Watermark updated successfully.\")"
+						],
+						"outputs": [],
+						"execution_count": 22
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"import json\n",
 							"from notebookutils import mssparkutils\n",
