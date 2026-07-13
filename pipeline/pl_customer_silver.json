@@ -34,6 +34,10 @@
 						"source_name": {
 							"value": "customer",
 							"type": "string"
+						},
+						"run_id": {
+							"value": "@pipeline().parameters.run_id",
+							"type": "string"
 						}
 					},
 					"snapshot": true,
