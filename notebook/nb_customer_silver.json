@@ -20,7 +20,7 @@
 				"spark.dynamicAllocation.enabled": "true",
 				"spark.dynamicAllocation.minExecutors": "1",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "6019a882-d0c8-497d-be81-5395a25d6506"
+				"spark.autotune.trackingId": "7c447fdd-2b23-4911-b9c8-629cfcc986e0"
 			}
 		},
 		"metadata": {
@@ -53,6 +53,31 @@
 		"cells": [
 			{
 				"cell_type": "code",
+				"metadata": {
+					"tags": [
+						"parameters"
+					]
+				},
+				"source": [
+					"run_id = \"\"\n",
+					"batch_id = \"\"\n",
+					"start_time = \"\"\n",
+					"source_name = \"customer\""
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"print(run_id)\n",
+					"print(batch_id)\n",
+					"print(start_time)\n",
+					"print(source_name)"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
 				"source": [
 					"# ==========================================================\n",
 					"# Customer Silver Notebook\n",
@@ -60,7 +85,7 @@
 					"# Purpose : Incremental Processing using Delta Lake MERGE\n",
 					"# =========================================================="
 				],
-				"execution_count": 31
+				"execution_count": 3
 			},
 			{
 				"cell_type": "code",
@@ -70,7 +95,7 @@
 					"from delta.tables import DeltaTable\n",
 					"from pyspark.sql.window import Window"
 				],
-				"execution_count": 32
+				"execution_count": 4
 			},
 			{
 				"cell_type": "code",
@@ -94,7 +119,7 @@
 					"    \"ls_keyvault\"\n",
 					")"
 				],
-				"execution_count": 33
+				"execution_count": 5
 			},
 			{
 				"cell_type": "code",
@@ -121,7 +146,31 @@
 					"    \"driver\": \"com.microsoft.sqlserver.jdbc.SQLServerDriver\"\n",
 					"}"
 				],
-				"execution_count": 34
+				"execution_count": 6
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"# ==========================================================\n",
+					"# Execute SQL Stored Procedure\n",
+					"# ==========================================================\n",
+					"\n",
+					"def execute_sql(sql_query):\n",
+					"\n",
+					"    connection = spark._sc._gateway.jvm.java.sql.DriverManager.getConnection(\n",
+					"        jdbc_url,\n",
+					"        jdbc_properties[\"user\"],\n",
+					"        jdbc_properties[\"password\"]\n",
+					"    )\n",
+					"\n",
+					"    statement = connection.createStatement()\n",
+					"\n",
+					"    statement.execute(sql_query)\n",
+					"\n",
+					"    statement.close()\n",
+					"    connection.close()"
+				],
+				"execution_count": 7
 			},
 			{
 				"cell_type": "code",
@@ -142,7 +191,7 @@
 					"\n",
 					""
 				],
-				"execution_count": null
+				"execution_count": 8
 			},
 			{
 				"cell_type": "code",
@@ -154,7 +203,7 @@
 					"    to_timestamp(col(\"last_updated_ts\"), \"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'\")\n",
 					")"
 				],
-				"execution_count": 17
+				"execution_count": 9
 			},
 			{
 				"cell_type": "code",
@@ -166,7 +215,7 @@
 					"print(\"Current Schema:\")\n",
 					"print(current_schema_json)"
 				],
-				"execution_count": null
+				"execution_count": 10
 			},
 			{
 				"cell_type": "code",
@@ -193,7 +242,7 @@
 					"\n",
 					"display(schema_history_df)"
 				],
-				"execution_count": 7
+				"execution_count": 11
 			},
 			{
 				"cell_type": "code",
@@ -222,7 +271,7 @@
 					"print(f\"Schema Version : {schema_version}\")\n",
 					""
 				],
-				"execution_count": 8
+				"execution_count": 12
 			},
 			{
 				"cell_type": "code",
@@ -264,7 +313,7 @@
 					"else:\n",
 					"    print(\"No schema change detected\")"
 				],
-				"execution_count": 12
+				"execution_count": 13
 			},
 			{
 				"cell_type": "code",
@@ -284,7 +333,7 @@
 					"\n",
 					"display(watermark_df)"
 				],
-				"execution_count": null
+				"execution_count": 14
 			},
 			{
 				"cell_type": "code",
@@ -300,7 +349,7 @@
 					"\n",
 					"print(f\"Last watermark value is : {last_watermark_value}\")"
 				],
-				"execution_count": 14
+				"execution_count": 15
 			},
 			{
 				"cell_type": "code",
@@ -325,7 +374,7 @@
 					"print(f\"Incremental records count : {incremental_record_count}\")\n",
 					"display(df_incremental)"
 				],
-				"execution_count": null
+				"execution_count": 16
 			},
 			{
 				"cell_type": "code",
@@ -344,7 +393,7 @@
 					"    silver_exists = False\n",
 					"    print(\"Silver Delta Table Does Not Exist\")"
 				],
-				"execution_count": 24
+				"execution_count": 17
 			},
 			{
 				"cell_type": "code",
@@ -442,7 +491,7 @@
 					"        .execute()\n",
 					"    print(\"Delta MERGE completed successfully..\")"
 				],
-				"execution_count": null
+				"execution_count": 18
 			},
 			{
 				"cell_type": "code",
@@ -456,7 +505,35 @@
 					"\n",
 					"print(f\"New watermark : {new_watermark}\")"
 				],
-				"execution_count": null
+				"execution_count": 19
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"# ==========================================================\n",
+					"# Update Watermark\n",
+					"# ==========================================================\n",
+					"\n",
+					"update_watermark_sql = f\"\"\"\n",
+					"EXEC dbo.sp_update_watermark\n",
+					"    @source_name = 'customer',\n",
+					"    @last_watermark_value = '{new_watermark}'\n",
+					"\"\"\"\n",
+					"\n",
+					"print(update_watermark_sql)"
+				],
+				"execution_count": 21
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"# Execute Stored Procedure\n",
+					"\n",
+					"execute_sql(update_watermark_sql)\n",
+					"\n",
+					"print(\"Watermark updated successfully.\")"
+				],
+				"execution_count": 22
 			},
 			{
 				"cell_type": "code",

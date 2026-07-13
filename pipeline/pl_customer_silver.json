@@ -26,6 +26,24 @@
 						"referenceName": "nb_customer_silver",
 						"type": "NotebookReference"
 					},
+					"parameters": {
+						"run_id": {
+							"value": "@pipeline().RunId",
+							"type": "string"
+						},
+						"batch_id": {
+							"value": "@variables('v_batch_id')",
+							"type": "string"
+						},
+						"start_time": {
+							"value": "@variables('v_start_time')",
+							"type": "string"
+						},
+						"source_name": {
+							"value": "customer",
+							"type": "string"
+						}
+					},
 					"snapshot": true,
 					"sparkPool": {
 						"referenceName": "sparksmall",
