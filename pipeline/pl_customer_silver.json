@@ -121,7 +121,7 @@
 						},
 						"source_name": {
 							"value": {
-								"value": "@json(activity('nb_customer_silver').output.exitValue).source_name",
+								"value": "Failed",
 								"type": "Expression"
 							},
 							"type": "String"
@@ -175,7 +175,7 @@
 						},
 						"status": {
 							"value": {
-								"value": "@json(activity('nb_customer_silver').output.exitValue).status",
+								"value": "Success",
 								"type": "Expression"
 							},
 							"type": "String"
@@ -232,7 +232,7 @@
 						},
 						"status": {
 							"value": {
-								"value": "@json(activity('nb_customer_silver').output.exitValue).status",
+								"value": "Failed",
 								"type": "Expression"
 							},
 							"type": "String"
