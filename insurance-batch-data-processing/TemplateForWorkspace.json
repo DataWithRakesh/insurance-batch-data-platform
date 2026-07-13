@@ -1056,14 +1056,14 @@
 							"storedProcedureParameters": {
 								"last_watermark_value": {
 									"value": {
-										"value": "@json(activity('nb_customer_silver').output.result.exitValue).new_watermark",
+										"value": "@json(activity('nb_customer_silver').output.exitValue).new_watermark",
 										"type": "Expression"
 									},
 									"type": "DateTime"
 								},
 								"source_name": {
 									"value": {
-										"value": "@json(activity('nb_customer_silver').output.result.exitValue).source_name",
+										"value": "@json(activity('nb_customer_silver').output.exitValue).source_name",
 										"type": "Expression"
 									},
 									"type": "String"
@@ -1106,7 +1106,7 @@
 								},
 								"bronze_record_count": {
 									"value": {
-										"value": "@json(activity('nb_customer_silver').output.result.exitValue).bronze_record_count",
+										"value": "@json(activity('nb_customer_silver').output.exitValue).bronze_record_count",
 										"type": "Expression"
 									},
 									"type": "Int32"
@@ -1124,14 +1124,14 @@
 								},
 								"incremental_record_count": {
 									"value": {
-										"value": "@json(activity('nb_customer_silver').output.result.exitValue).incremental_record_count",
+										"value": "@json(activity('nb_customer_silver').output.exitValue).incremental_record_count",
 										"type": "Expression"
 									},
 									"type": "Int32"
 								},
 								"insert_count": {
 									"value": {
-										"value": "@json(activity('nb_customer_silver').output.result.exitValue).insert_count",
+										"value": "@json(activity('nb_customer_silver').output.exitValue).insert_count",
 										"type": "Expression"
 									},
 									"type": "Int32"
@@ -1167,14 +1167,14 @@
 								},
 								"status": {
 									"value": {
-										"value": "@json(activity('nb_customer_silver').output.result.exitValue).status",
+										"value": "@json(activity('nb_customer_silver').output.exitValue).status",
 										"type": "Expression"
 									},
 									"type": "String"
 								},
 								"update_count": {
 									"value": {
-										"value": "@json(activity('nb_customer_silver').output.result.exitValue).update_count",
+										"value": "@json(activity('nb_customer_silver').output.exitValue).update_count",
 										"type": "Expression"
 									},
 									"type": "Int32"
@@ -1253,7 +1253,7 @@
 								},
 								"source_name": {
 									"value": {
-										"value": "@json(activity('nb_customer_silver').output.result.exitValue).source_name",
+										"value": "@json(activity('nb_customer_silver').output.exitValue).source_name",
 										"type": "Expression"
 									},
 									"type": "String"
@@ -1307,7 +1307,7 @@
 								},
 								"status": {
 									"value": {
-										"value": "@json(activity('nb_customer_silver').output.result.exitValue).status",
+										"value": "@json(activity('nb_customer_silver').output.exitValue).status",
 										"type": "Expression"
 									},
 									"type": "String"
@@ -1363,7 +1363,10 @@
 									"type": "String"
 								},
 								"status": {
-									"value": "Failed",
+									"value": {
+										"value": "@json(activity('nb_customer_silver').output.exitValue).status",
+										"type": "Expression"
+									},
 									"type": "String"
 								}
 							}
