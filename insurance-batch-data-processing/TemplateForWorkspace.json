@@ -959,7 +959,10 @@
 							},
 							"waitOnCompletion": true,
 							"parameters": {
-								"run_id": "@pipeline().RunId"
+								"run_id": {
+									"value": "@pipeline().RunId",
+									"type": "Expression"
+								}
 							}
 						}
 					}
@@ -1004,7 +1007,6 @@
 			"dependsOn": [
 				"[concat(variables('workspaceId'), '/datasets/ds_sql_metadata')]",
 				"[concat(variables('workspaceId'), '/dataflows/df_customer_bronze')]",
-				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]",
 				"[concat(variables('workspaceId'), '/datasets/ds_customer_landing')]",
 				"[concat(variables('workspaceId'), '/linkedServices/ls_slq_server')]",
 				"[concat(variables('workspaceId'), '/pipelines/pl_customer_silver')]",
@@ -1044,7 +1046,10 @@
 							},
 							"parameters": {
 								"start_time": {
-									"value": "@variables('v_start_time')",
+									"value": {
+										"value": "@variables('v_start_time')",
+										"type": "Expression"
+									},
 									"type": "string"
 								},
 								"source_name": {
@@ -1052,7 +1057,10 @@
 									"type": "string"
 								},
 								"run_id": {
-									"value": "@pipeline().parameters.run_id",
+									"value": {
+										"value": "@pipeline().parameters.run_id",
+										"type": "Expression"
+									},
 									"type": "string"
 								}
 							},
@@ -1345,7 +1353,10 @@
 						"userProperties": [],
 						"typeProperties": {
 							"variableName": "v_start_time",
-							"value": "@utcNow()"
+							"value": {
+								"value": "@utcNow()",
+								"type": "Expression"
+							}
 						}
 					}
 				],
@@ -1371,6 +1382,101 @@
 				"[concat(variables('workspaceId'), '/notebooks/nb_customer_silver')]",
 				"[concat(variables('workspaceId'), '/bigDataPools/sparksmall')]",
 				"[concat(variables('workspaceId'), '/linkedServices/ls_slq_server')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/pl_monitor_customer_pipeline')]",
+			"type": "Microsoft.Synapse/workspaces/pipelines",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"activities": [
+					{
+						"name": "lk_latest_pipeline_run",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": "SELECT TOP 1\n    run_id,\n    pipeline_name,\n    status,\n    start_time,\n    end_time,\n    error_message\nFROM dbo.pipeline_run\nWHERE pipeline_name = 'pl_customer_landing_to_bronze'\nORDER BY start_time DESC;",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "ds_sql_metadata",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						}
+					},
+					{
+						"name": "If Condition1",
+						"type": "IfCondition",
+						"dependsOn": [
+							{
+								"activity": "lk_latest_pipeline_run",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"expression": {
+								"value": "@equals(activity('lk_latest_pipeline_run').output.firstRow.status,'Success')",
+								"type": "Expression"
+							},
+							"ifFalseActivities": [
+								{
+									"name": "web_send_email_alert",
+									"type": "WebActivity",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"method": "POST",
+										"headers": {
+											"Content-Type": "application/json"
+										},
+										"url": "https://prod-00.westus2.logic.azure.com:443/workflows/42141f3328904764a6f5138773f759d0/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=UCVSJjiWlqOoWOwtcO8PdlGeX9KNxMqae1FhsRaoZOg",
+										"connectVia": {
+											"referenceName": "AutoResolveIntegrationRuntime",
+											"type": "IntegrationRuntimeReference"
+										},
+										"body": {
+											"value": "{\n  \"pipeline_name\": \"@{activity('lk_latest_pipeline_run').output.firstRow.pipeline_name}\",\n  \"run_id\": \"@{activity('lk_latest_pipeline_run').output.firstRow.run_id}\",\n  \"status\": \"@{activity('lk_latest_pipeline_run').output.firstRow.status}\",\n  \"start_time\": \"@{activity('lk_latest_pipeline_run').output.firstRow.start_time}\",\n  \"end_time\": \"@{activity('lk_latest_pipeline_run').output.firstRow.end_time}\",\n  \"error_message\": \"@{activity('lk_latest_pipeline_run').output.firstRow.error_message}\"\n}",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"folder": {
+					"name": "pipelines/monitoring"
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/datasets/ds_sql_metadata')]",
+				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
 			]
 		},
 		{
@@ -2556,7 +2662,7 @@
 						"spark.dynamicAllocation.enabled": "true",
 						"spark.dynamicAllocation.minExecutors": "1",
 						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "330cfbf1-6536-4d71-b834-ff09482e5589"
+						"spark.autotune.trackingId": "40275745-51a6-4660-8736-9c68932585d4"
 					}
 				},
 				"metadata": {
@@ -2581,8 +2687,7 @@
 						"sparkVersion": "3.5",
 						"nodeCount": 10,
 						"cores": 4,
-						"memory": 28,
-						"automaticScaleJobs": true
+						"memory": 28
 					},
 					"sessionKeepAliveTimeout": 30
 				},
@@ -2604,7 +2709,6 @@
 					},
 					{
 						"cell_type": "code",
-						"metadata": {},
 						"source": [
 							"print(f\"Start Time: {start_time}\")\n",
 							"print(f\"Run ID : {run_id}\")\n",
@@ -2615,7 +2719,6 @@
 					},
 					{
 						"cell_type": "code",
-						"metadata": {},
 						"source": [
 							"# ==========================================================\n",
 							"# Customer Silver Notebook\n",
@@ -2628,7 +2731,6 @@
 					},
 					{
 						"cell_type": "code",
-						"metadata": {},
 						"source": [
 							"from pyspark.sql.functions import *\n",
 							"from pyspark.sql.types import *\n",
@@ -2640,7 +2742,6 @@
 					},
 					{
 						"cell_type": "code",
-						"metadata": {},
 						"source": [
 							"# ==========================================================\n",
 							"# keyvault Connection Configuration\n",
@@ -2666,7 +2767,6 @@
 					},
 					{
 						"cell_type": "code",
-						"metadata": {},
 						"source": [
 							"# ==========================================================\n",
 							"# JDBC Connection Configuration\n",
@@ -2695,7 +2795,6 @@
 					},
 					{
 						"cell_type": "code",
-						"metadata": {},
 						"source": [
 							"# ==========================================================\n",
 							"# Execute SQL Stored Procedure\n",
@@ -2743,7 +2842,6 @@
 					},
 					{
 						"cell_type": "code",
-						"metadata": {},
 						"source": [
 							"from pyspark.sql.functions import col, to_timestamp\n",
 							"\n",
@@ -2757,7 +2855,6 @@
 					},
 					{
 						"cell_type": "code",
-						"metadata": {},
 						"source": [
 							"# ==========================================================\n",
 							"# Current Schema Validation\n",
@@ -2799,7 +2896,6 @@
 					},
 					{
 						"cell_type": "code",
-						"metadata": {},
 						"source": [
 							"# ==========================================================\n",
 							"# Compare Schema\n",
@@ -2830,7 +2926,6 @@
 					},
 					{
 						"cell_type": "code",
-						"metadata": {},
 						"source": [
 							"# ==========================================================\n",
 							"# Insert Schema History\n",
@@ -2895,7 +2990,6 @@
 					},
 					{
 						"cell_type": "code",
-						"metadata": {},
 						"source": [
 							"# ==========================================================\n",
 							"# Read Last Watermark Value\n",
@@ -2939,7 +3033,6 @@
 					},
 					{
 						"cell_type": "code",
-						"metadata": {},
 						"source": [
 							"# ==========================================================\n",
 							"# Check if Silver Delta Table Exists\n",
@@ -2960,7 +3053,6 @@
 					},
 					{
 						"cell_type": "code",
-						"metadata": {},
 						"source": [
 							"from pyspark.sql.functions import col\n",
 							"# ==========================================================\n",
@@ -3060,7 +3152,6 @@
 					},
 					{
 						"cell_type": "code",
-						"metadata": {},
 						"source": [
 							"# ==========================================================\n",
 							"# Get Latest Watermark\n",
@@ -3076,7 +3167,6 @@
 					},
 					{
 						"cell_type": "code",
-						"metadata": {},
 						"source": [
 							"# ==========================================================\n",
 							"# Update Watermark\n",
@@ -3095,7 +3185,6 @@
 					},
 					{
 						"cell_type": "code",
-						"metadata": {},
 						"source": [
 							"# Execute Stored Procedure\n",
 							"\n",
@@ -3108,7 +3197,6 @@
 					},
 					{
 						"cell_type": "code",
-						"metadata": {},
 						"source": [
 							"from datetime import datetime, timezone\n",
 							"\n",
@@ -3129,7 +3217,6 @@
 					},
 					{
 						"cell_type": "code",
-						"metadata": {},
 						"source": [
 							"# ==========================================================\n",
 							"# Insert Audit Log\n",
@@ -3159,7 +3246,6 @@
 					},
 					{
 						"cell_type": "code",
-						"metadata": {},
 						"source": [
 							"# Execute Audit Stored Procedure\n",
 							"\n",
@@ -3829,101 +3915,6 @@
 			},
 			"dependsOn": [],
 			"location": "westus2"
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/pl_monitor_customer_pipeline')]",
-			"type": "Microsoft.Synapse/workspaces/pipelines",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"activities": [
-					{
-						"name": "lk_latest_pipeline_run",
-						"type": "Lookup",
-						"dependsOn": [],
-						"policy": {
-							"timeout": "0.12:00:00",
-							"retry": 0,
-							"retryIntervalInSeconds": 30,
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"source": {
-								"type": "AzureSqlSource",
-								"sqlReaderQuery": "SELECT TOP 1\n    run_id,\n    pipeline_name,\n    status,\n    start_time,\n    end_time,\n    error_message\nFROM dbo.pipeline_run\nWHERE pipeline_name = 'pl_customer_landing_to_bronze'\nORDER BY start_time DESC;",
-								"queryTimeout": "02:00:00",
-								"partitionOption": "None"
-							},
-							"dataset": {
-								"referenceName": "ds_sql_metadata",
-								"type": "DatasetReference",
-								"parameters": {}
-							}
-						}
-					},
-					{
-						"name": "If Condition1",
-						"type": "IfCondition",
-						"dependsOn": [
-							{
-								"activity": "lk_latest_pipeline_run",
-								"dependencyConditions": [
-									"Succeeded"
-								]
-							}
-						],
-						"userProperties": [],
-						"typeProperties": {
-							"expression": {
-								"value": "@equals(activity('lk_latest_pipeline_run').output.firstRow.status,'Success')",
-								"type": "Expression"
-							},
-							"ifFalseActivities": [
-								{
-									"name": "web_send_email_alert",
-									"type": "WebActivity",
-									"dependsOn": [],
-									"policy": {
-										"timeout": "0.12:00:00",
-										"retry": 0,
-										"retryIntervalInSeconds": 30,
-										"secureOutput": false,
-										"secureInput": false
-									},
-									"userProperties": [],
-									"typeProperties": {
-										"method": "POST",
-										"headers": {
-											"Content-Type": "application/json"
-										},
-										"url": "https://prod-00.westus2.logic.azure.com:443/workflows/42141f3328904764a6f5138773f759d0/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=UCVSJjiWlqOoWOwtcO8PdlGeX9KNxMqae1FhsRaoZOg",
-										"connectVia": {
-											"referenceName": "AutoResolveIntegrationRuntime",
-											"type": "IntegrationRuntimeReference"
-										},
-										"body": {
-											"value": "{\n  \"pipeline_name\": \"@{activity('lk_latest_pipeline_run').output.firstRow.pipeline_name}\",\n  \"run_id\": \"@{activity('lk_latest_pipeline_run').output.firstRow.run_id}\",\n  \"status\": \"@{activity('lk_latest_pipeline_run').output.firstRow.status}\",\n  \"start_time\": \"@{activity('lk_latest_pipeline_run').output.firstRow.start_time}\",\n  \"end_time\": \"@{activity('lk_latest_pipeline_run').output.firstRow.end_time}\",\n  \"error_message\": \"@{activity('lk_latest_pipeline_run').output.firstRow.error_message}\"\n}",
-											"type": "Expression"
-										}
-									}
-								}
-							]
-						}
-					}
-				],
-				"policy": {
-					"elapsedTimeMetric": {}
-				},
-				"folder": {
-					"name": "pipelines/monitoring"
-				},
-				"annotations": []
-			},
-			"dependsOn": [
-				"[concat(variables('workspaceId'), '/datasets/ds_sql_metadata')]",
-				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
-			]
 		}
 	]
 }
