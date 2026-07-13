@@ -1110,7 +1110,7 @@
 								},
 								"source_name": {
 									"value": {
-										"value": "@json(activity('nb_customer_silver').output.exitValue).source_name",
+										"value": "Failed",
 										"type": "Expression"
 									},
 									"type": "String"
@@ -1164,7 +1164,7 @@
 								},
 								"status": {
 									"value": {
-										"value": "@json(activity('nb_customer_silver').output.exitValue).status",
+										"value": "Success",
 										"type": "Expression"
 									},
 									"type": "String"
@@ -1221,7 +1221,7 @@
 								},
 								"status": {
 									"value": {
-										"value": "@json(activity('nb_customer_silver').output.exitValue).status",
+										"value": "Failed",
 										"type": "Expression"
 									},
 									"type": "String"
@@ -2520,7 +2520,7 @@
 						"spark.dynamicAllocation.enabled": "true",
 						"spark.dynamicAllocation.minExecutors": "1",
 						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "ab0227af-b26e-4dfd-bd1e-10fef382395f"
+						"spark.autotune.trackingId": "62133118-1ceb-4279-a539-900561490fd4"
 					}
 				},
 				"metadata": {
