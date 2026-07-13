@@ -1,0 +1,55 @@
+{
+	"name": "pl_monitor_customer_pipeline",
+	"properties": {
+		"activities": [
+			{
+				"name": "lk_latest_pipeline_run",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": "SELECT TOP 1\n    run_id,\n    pipeline_name,\n    status,\n    start_time,\n    end_time,\n    error_message\nFROM dbo.pipeline_run\nWHERE pipeline_name = 'pl_customer_landing_to_bronze'\nORDER BY start_time DESC;",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "ds_sql_metadata",
+						"type": "DatasetReference"
+					}
+				}
+			},
+			{
+				"name": "If Condition1",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "lk_latest_pipeline_run",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@equals(activity('lk_latest_pipeline_run').output.firstRow.status,'Success')",
+						"type": "Expression"
+					}
+				}
+			}
+		],
+		"folder": {
+			"name": "pipelines/monitoring"
+		},
+		"annotations": []
+	}
+}
