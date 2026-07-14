@@ -1435,7 +1435,37 @@
 							},
 							"ifFalseActivities": [
 								{
-									"name": "web_send_email_alert",
+									"name": "web_send_email_alert_failed",
+									"type": "WebActivity",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"method": "POST",
+										"headers": {
+											"Content-Type": "application/json"
+										},
+										"url": "https://prod-00.westus2.logic.azure.com:443/workflows/42141f3328904764a6f5138773f759d0/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=UCVSJjiWlqOoWOwtcO8PdlGeX9KNxMqae1FhsRaoZOg",
+										"connectVia": {
+											"referenceName": "AutoResolveIntegrationRuntime",
+											"type": "IntegrationRuntimeReference"
+										},
+										"body": {
+											"value": "{\n  \"pipeline_name\": \"@{activity('lk_latest_pipeline_run').output.firstRow.pipeline_name}\",\n  \"run_id\": \"@{activity('lk_latest_pipeline_run').output.firstRow.run_id}\",\n  \"status\": \"@{activity('lk_latest_pipeline_run').output.firstRow.status}\",\n  \"start_time\": \"@{activity('lk_latest_pipeline_run').output.firstRow.start_time}\",\n  \"end_time\": \"@{activity('lk_latest_pipeline_run').output.firstRow.end_time}\",\n  \"error_message\": \"@{activity('lk_latest_pipeline_run').output.firstRow.error_message}\"\n}",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"ifTrueActivities": [
+								{
+									"name": "web_send_email_alert_success",
 									"type": "WebActivity",
 									"dependsOn": [],
 									"policy": {
@@ -3915,6 +3945,48 @@
 			},
 			"dependsOn": [],
 			"location": "westus2"
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/pl_master_ingestion')]",
+			"type": "Microsoft.Synapse/workspaces/pipelines",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"activities": [
+					{
+						"name": "exec_customer_pipeline",
+						"type": "ExecutePipeline",
+						"dependsOn": [],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "pl_customer_landing_to_bronze",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {}
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"triggered_by": {
+						"type": "string",
+						"defaultValue": "Master Pipeline"
+					}
+				},
+				"folder": {
+					"name": "master"
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/pipelines/pl_customer_landing_to_bronze')]"
+			]
 		}
 	]
 }
