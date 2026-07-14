@@ -1,0 +1,33 @@
+{
+	"name": "pl_master_ingestion",
+	"properties": {
+		"activities": [
+			{
+				"name": "exec_customer_pipeline",
+				"type": "ExecutePipeline",
+				"dependsOn": [],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "pl_customer_landing_to_bronze",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true
+				}
+			}
+		],
+		"parameters": {
+			"triggered_by": {
+				"type": "string",
+				"defaultValue": "Master Pipeline"
+			}
+		},
+		"folder": {
+			"name": "master"
+		},
+		"annotations": []
+	}
+}
