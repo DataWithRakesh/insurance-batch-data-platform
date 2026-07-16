@@ -1385,6 +1385,49 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('workspaceName'), '/pl_master_ingestion')]",
+			"type": "Microsoft.Synapse/workspaces/pipelines",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"description": "Version 1.1 - Added Master Pipeline Integration",
+				"activities": [
+					{
+						"name": "exec_customer_pipeline",
+						"type": "ExecutePipeline",
+						"dependsOn": [],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "pl_customer_landing_to_bronze",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {}
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"triggered_by": {
+						"type": "string",
+						"defaultValue": "Master Pipeline"
+					}
+				},
+				"folder": {
+					"name": "master"
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/pipelines/pl_customer_landing_to_bronze')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('workspaceName'), '/pl_monitor_customer_pipeline')]",
 			"type": "Microsoft.Synapse/workspaces/pipelines",
 			"apiVersion": "2019-06-01-preview",
@@ -2692,7 +2735,7 @@
 						"spark.dynamicAllocation.enabled": "true",
 						"spark.dynamicAllocation.minExecutors": "1",
 						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "40275745-51a6-4660-8736-9c68932585d4"
+						"spark.autotune.trackingId": "efc2bad5-2331-43bd-a218-5f4c142d8d07"
 					}
 				},
 				"metadata": {
@@ -2717,7 +2760,8 @@
 						"sparkVersion": "3.5",
 						"nodeCount": 10,
 						"cores": 4,
-						"memory": 28
+						"memory": 28,
+						"automaticScaleJobs": true
 					},
 					"sessionKeepAliveTimeout": 30
 				},
@@ -2739,6 +2783,7 @@
 					},
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"print(f\"Start Time: {start_time}\")\n",
 							"print(f\"Run ID : {run_id}\")\n",
@@ -2749,6 +2794,7 @@
 					},
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"# ==========================================================\n",
 							"# Customer Silver Notebook\n",
@@ -2761,6 +2807,7 @@
 					},
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"from pyspark.sql.functions import *\n",
 							"from pyspark.sql.types import *\n",
@@ -2772,6 +2819,7 @@
 					},
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"# ==========================================================\n",
 							"# keyvault Connection Configuration\n",
@@ -2797,6 +2845,7 @@
 					},
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"# ==========================================================\n",
 							"# JDBC Connection Configuration\n",
@@ -2825,6 +2874,7 @@
 					},
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"# ==========================================================\n",
 							"# Execute SQL Stored Procedure\n",
@@ -2872,6 +2922,7 @@
 					},
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"from pyspark.sql.functions import col, to_timestamp\n",
 							"\n",
@@ -2885,6 +2936,7 @@
 					},
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"# ==========================================================\n",
 							"# Current Schema Validation\n",
@@ -2926,6 +2978,7 @@
 					},
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"# ==========================================================\n",
 							"# Compare Schema\n",
@@ -2956,6 +3009,7 @@
 					},
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"# ==========================================================\n",
 							"# Insert Schema History\n",
@@ -3020,6 +3074,7 @@
 					},
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"# ==========================================================\n",
 							"# Read Last Watermark Value\n",
@@ -3063,6 +3118,7 @@
 					},
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"# ==========================================================\n",
 							"# Check if Silver Delta Table Exists\n",
@@ -3083,6 +3139,7 @@
 					},
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"from pyspark.sql.functions import col\n",
 							"# ==========================================================\n",
@@ -3182,6 +3239,7 @@
 					},
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"# ==========================================================\n",
 							"# Get Latest Watermark\n",
@@ -3197,6 +3255,7 @@
 					},
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"# ==========================================================\n",
 							"# Update Watermark\n",
@@ -3215,6 +3274,7 @@
 					},
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"# Execute Stored Procedure\n",
 							"\n",
@@ -3227,6 +3287,7 @@
 					},
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"from datetime import datetime, timezone\n",
 							"\n",
@@ -3247,6 +3308,7 @@
 					},
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"# ==========================================================\n",
 							"# Insert Audit Log\n",
@@ -3276,6 +3338,7 @@
 					},
 					{
 						"cell_type": "code",
+						"metadata": {},
 						"source": [
 							"# Execute Audit Stored Procedure\n",
 							"\n",
@@ -3945,48 +4008,6 @@
 			},
 			"dependsOn": [],
 			"location": "westus2"
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/pl_master_ingestion')]",
-			"type": "Microsoft.Synapse/workspaces/pipelines",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"activities": [
-					{
-						"name": "exec_customer_pipeline",
-						"type": "ExecutePipeline",
-						"dependsOn": [],
-						"policy": {
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"pipeline": {
-								"referenceName": "pl_customer_landing_to_bronze",
-								"type": "PipelineReference"
-							},
-							"waitOnCompletion": true,
-							"parameters": {}
-						}
-					}
-				],
-				"policy": {
-					"elapsedTimeMetric": {}
-				},
-				"parameters": {
-					"triggered_by": {
-						"type": "string",
-						"defaultValue": "Master Pipeline"
-					}
-				},
-				"folder": {
-					"name": "master"
-				},
-				"annotations": []
-			},
-			"dependsOn": [
-				"[concat(variables('workspaceId'), '/pipelines/pl_customer_landing_to_bronze')]"
-			]
 		}
 	]
 }
