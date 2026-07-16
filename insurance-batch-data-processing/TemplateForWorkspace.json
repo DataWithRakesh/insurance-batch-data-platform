@@ -1389,7 +1389,7 @@
 			"type": "Microsoft.Synapse/workspaces/pipelines",
 			"apiVersion": "2019-06-01-preview",
 			"properties": {
-				"description": "Version 1.1 - Added Master Pipeline Integration",
+				"description": "Version 1.2 - Added Master Pipeline Integration",
 				"activities": [
 					{
 						"name": "exec_customer_pipeline",
@@ -2735,7 +2735,7 @@
 						"spark.dynamicAllocation.enabled": "true",
 						"spark.dynamicAllocation.minExecutors": "1",
 						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "efc2bad5-2331-43bd-a218-5f4c142d8d07"
+						"spark.autotune.trackingId": "a89156d6-ddd0-4cf7-a95c-4ca108495a4a"
 					}
 				},
 				"metadata": {
