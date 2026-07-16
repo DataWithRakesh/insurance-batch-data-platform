@@ -1,6 +1,7 @@
 {
 	"name": "pl_master_ingestion",
 	"properties": {
+		"description": "Version 1.1 - Added Master Pipeline Integration",
 		"activities": [
 			{
 				"name": "exec_customer_pipeline",
