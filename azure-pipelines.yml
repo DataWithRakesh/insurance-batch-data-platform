@@ -1,0 +1,15 @@
+trigger:
+  branches:
+    include:
+      - workspace_publish
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- checkout: self
+
+- script: |
+    echo "Synapse ARM templates received successfully."
+    echo "Starting deployment..."
+  displayName: 'Validate ARM Templates'
